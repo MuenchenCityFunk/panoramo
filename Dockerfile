@@ -2,7 +2,7 @@
 
 WORKDIR /app
 
-# Install system dependencies including FFmpeg
+# Install system dependencies including FFmpeg and Open3D dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     libgl1-mesa-glx \
@@ -13,6 +13,10 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     gcc \
     g++ \
+    libglu1-mesa-dev \
+    libglfw3-dev \
+    libglew-dev \
+    libeigen3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
