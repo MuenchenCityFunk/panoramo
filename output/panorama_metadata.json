@@ -1,0 +1,99 @@
+{
+  "panorama_file": "stitched_image_20250702_131428.jpg",
+  "panorama_path": "output\\stitched_image_20250702_131428.jpg",
+  "gps_coordinates": {
+    "lat": 52.5134044,
+    "lon": 13.3289684,
+    "accuracy": 10.0,
+    "timestamp": "2025-07-02T13:14:25.546632",
+    "source": "mobile_gps"
+  },
+  "video_info": {
+    "duration": 0.0,
+    "bitrate": null,
+    "width": 1280,
+    "height": 720,
+    "fps": 1000.0,
+    "codec": "vp9"
+  },
+  "created_at": "2025-07-02T13:15:09.529284",
+  "file_size": 110111,
+  "status": "completed",
+  "device_type": "mobile_upload",
+  "video_deleted": true,
+  "image_width": 1278,
+  "image_height": 694,
+  "image_channels": 3,
+  "additional_files": [
+    {
+      "filename": "3d_model_stitched_image_20250701_171153.gltf",
+      "file_size": 891219,
+      "type": "3d_model"
+    },
+    {
+      "filename": "3d_model_stitched_image_20250702_002108.gltf",
+      "file_size": 3534537,
+      "type": "3d_model"
+    },
+    {
+      "filename": "3d_model_stitched_image_20250702_004303.gltf",
+      "file_size": 2450910,
+      "type": "3d_model"
+    },
+    {
+      "filename": "3d_model_stitched_image_20250702_011910.gltf",
+      "file_size": 2264357,
+      "type": "3d_model"
+    },
+    {
+      "filename": "3d_model_stitched_image_20250702_125830.gltf",
+      "file_size": 3378055,
+      "type": "3d_model"
+    },
+    {
+      "filename": "3d_model_stitched_image_20250702_130505.gltf",
+      "file_size": 2199216,
+      "type": "3d_model"
+    },
+    {
+      "filename": "3d_model_stitched_image_20250702_131428.gltf",
+      "file_size": 2674256,
+      "type": "3d_model"
+    },
+    {
+      "filename": "depth_map_stitched_image_20250701_171153.png",
+      "file_size": 19168,
+      "type": "depth_map"
+    },
+    {
+      "filename": "depth_map_stitched_image_20250702_002108.png",
+      "file_size": 35499,
+      "type": "depth_map"
+    },
+    {
+      "filename": "depth_map_stitched_image_20250702_004303.png",
+      "file_size": 31781,
+      "type": "depth_map"
+    },
+    {
+      "filename": "depth_map_stitched_image_20250702_011910.png",
+      "file_size": 51638,
+      "type": "depth_map"
+    },
+    {
+      "filename": "depth_map_stitched_image_20250702_125830.png",
+      "file_size": 36713,
+      "type": "depth_map"
+    },
+    {
+      "filename": "depth_map_stitched_image_20250702_130505.png",
+      "file_size": 40340,
+      "type": "depth_map"
+    },
+    {
+      "filename": "depth_map_stitched_image_20250702_131428.png",
+      "file_size": 50208,
+      "type": "depth_map"
+    }
+  ]
+}

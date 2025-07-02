@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lou Point Cloud Viewer</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #000; 
+            font-family: Arial, sans-serif;
+        }
+        canvas { 
+            display: block; 
+        }
+        #info { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            color: white; 
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .control-group {
+            margin-bottom: 10px;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .control-group input {
+            width: 100px;
+        }
+        #fileInputs {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Lou Point Cloud Viewer - Select your images</div>
+    
+    <div id="fileInputs">
+        <div class="control-group">
+            <label for="originalImage">Original Image (lou.jpg):</label>
+            <input type="file" id="originalImage" accept="image/*">
+        </div>
+        <div class="control-group">
+            <label for="depthImage">Depth Map (lou.png):</label>
+            <input type="file" id="depthImage" accept="image/*">
+        </div>
+        <div class="control-group">
+            <button id="generatePointCloud">Generate Point Cloud</button>
+        </div>
+    </div>
+    
+    <div id="controls" style="display: none;">
+        <div class="control-group">
+            <label for="pointSize">Point Size:</label>
+            <input type="range" id="pointSize" min="0.001" max="0.1" step="0.001" value="0.01">
+        </div>
+        <div class="control-group">
+            <label for="depthIntensity">Depth Intensity:</label>
+            <input type="range" id="depthIntensity" min="0" max="2" step="0.1" value="1">
+        </div>
+        <div class="control-group">
+            <label for="backgroundColor">Background:</label>
+            <input type="color" id="backgroundColor" value="#000000">
+        </div>
+        <div class="control-group">
+            <button id="resetCamera">Reset Camera</button>
+        </div>
+        <div class="control-group">
+            <button id="exportData">Export Point Cloud</button>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <script>
+        // Three.js Setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        camera.position.set(0, 0, 5);
+        controls.update();
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+
+        let currentPoints = null;
+        let originalCameraPosition = null;
+        let originalControlsTarget = null;
+        let pointCloudData = null;
+        let originalImageData = null;
+        let depthImageData = null;
+
+        function loadImageAsImageData(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true }); // ✅ willReadFrequently hinzugefügt
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    callback(imageData);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function generatePointCloud() {
+            if (!originalImageData || !depthImageData) {
+                alert('Please select both images first!');
+                return;
+            }
+
+            // ✅ Überprüfen Sie, ob die Bilder die gleiche Größe haben
+            if (originalImageData.width !== depthImageData.width || originalImageData.height !== depthImageData.height) {
+                alert('Images must have the same dimensions! Original: ' + originalImageData.width + 'x' + originalImageData.height + ', Depth: ' + depthImageData.width + 'x' + depthImageData.height);
+                return;
+            }
+
+            const width = originalImageData.width;
+            const height = originalImageData.height;
+            const numPoints = width * height;
+            
+            // ✅ Überprüfen Sie die Array-Längen
+            if (originalImageData.data.length !== width * height * 4 || depthImageData.data.length !== width * height * 4) {
+                alert('Invalid image data! Please try different images.');
+                return;
+            }
+            
+            const positions = new Float32Array(numPoints * 3);
+            const colors = new Float32Array(numPoints * 3);
+            
+            let pointIndex = 0;
+            const depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
+            
+            try {
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < width; x++) {
+                        const pixelIndex = (y * width + x) * 4;
+                        
+                        // ✅ Überprüfen Sie die Array-Indizes
+                        if (pixelIndex + 3 >= originalImageData.data.length || pixelIndex + 3 >= depthImageData.data.length) {
+                            console.error('Pixel index out of bounds:', pixelIndex, 'for image size:', width, 'x', height);
+                            continue;
+                        }
+                        
+                        // Normalize coordinates
+                        const u = (x / width) - 0.5;
+                        const v = (y / height) - 0.5;
+                        
+                        // Get color from original image
+                        const r = originalImageData.data[pixelIndex] / 255;
+                        const g = originalImageData.data[pixelIndex + 1] / 255;
+                        const b = originalImageData.data[pixelIndex + 2] / 255;
+                        
+                        // Get depth from depth map (grayscale)
+                        const depth = depthImageData.data[pixelIndex] / 255;
+                        
+                        // Set position
+                        positions[pointIndex * 3] = u;
+                        positions[pointIndex * 3 + 1] = -v;
+                        positions[pointIndex * 3 + 2] = depth * depthIntensity;
+                        
+                        // Set color
+                        colors[pointIndex * 3] = r;
+                        colors[pointIndex * 3 + 1] = g;
+                        colors[pointIndex * 3 + 2] = b;
+                        
+                        pointIndex++;
+                    }
+                }
+            } catch (error) {
+                console.error('Error generating point cloud:', error);
+                alert('Error generating point cloud: ' + error.message);
+                return;
+            }
+            
+            // Store data for export
+            pointCloudData = {
+                positions: Array.from(positions),
+                colors: Array.from(colors),
+                count: numPoints,
+                metadata: {
+                    width: width,
+                    height: height,
+                    exportedAt: new Date().toISOString()
+                }
+            };
+            
+            // Create Three.js geometry
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: parseFloat(document.getElementById('pointSize').value),
+                vertexColors: true,
+                sizeAttenuation: true
+            });
+            
+            if (currentPoints) {
+                scene.remove(currentPoints);
+                currentPoints.geometry.dispose();
+                currentPoints.material.dispose();
+            }
+            
+            currentPoints = new THREE.Points(geometry, material);
+            scene.add(currentPoints);
+            
+            // Auto-adjust camera
+            const box = new THREE.Box3().setFromObject(currentPoints);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fov = camera.fov * (Math.PI / 180);
+            let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+            
+            originalCameraPosition = new THREE.Vector3(center.x, center.y, center.z + cameraZ * 1.5);
+            originalControlsTarget = center.clone();
+            
+            camera.position.copy(originalCameraPosition);
+            controls.target.copy(originalControlsTarget);
+            controls.update();
+            
+            document.getElementById('info').textContent = 
+                `Loaded: ${numPoints} points | Size: ${width} x ${height} | Depth Intensity: ${depthIntensity}`;
+            
+            // Show controls
+            document.getElementById('controls').style.display = 'block';
+        }
+
+        // Event listeners
+        document.getElementById('originalImage').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                loadImageAsImageData(e.target.files[0], (imageData) => {
+                    originalImageData = imageData;
+                    console.log('Original image loaded:', imageData.width, 'x', imageData.height, 'data length:', imageData.data.length);
+                });
+            }
+        });
+
+        document.getElementById('depthImage').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                loadImageAsImageData(e.target.files[0], (imageData) => {
+                    depthImageData = imageData;
+                    console.log('Depth image loaded:', imageData.width, 'x', imageData.height, 'data length:', imageData.data.length);
+                });
+            }
+        });
+
+        document.getElementById('generatePointCloud').addEventListener('click', generatePointCloud);
+
+        // Controls
+        document.getElementById('pointSize').addEventListener('input', (e) => {
+            if (currentPoints && currentPoints.material) {
+                currentPoints.material.size = parseFloat(e.target.value);
+            }
+        });
+
+        document.getElementById('depthIntensity').addEventListener('input', (e) => {
+            if (pointCloudData) {
+                generatePointCloudFromStoredData(parseFloat(e.target.value));
+            }
+        });
+
+        document.getElementById('backgroundColor').addEventListener('input', (e) => {
+            renderer.setClearColor(e.target.value);
+        });
+
+        document.getElementById('resetCamera').addEventListener('click', () => {
+            if (originalCameraPosition && originalControlsTarget) {
+                camera.position.copy(originalCameraPosition);
+                controls.target.copy(originalControlsTarget);
+                controls.update();
+            }
+        });
+
+        document.getElementById('exportData').addEventListener('click', () => {
+            if (pointCloudData) {
+                const dataStr = JSON.stringify(pointCloudData, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `lou_pointcloud_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.json`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+            }
+        });
+
+        function generatePointCloudFromStoredData(depthIntensity) {
+            if (!pointCloudData) return;
+            
+            const positions = new Float32Array(pointCloudData.positions);
+            const colors = new Float32Array(pointCloudData.colors);
+            
+            // Update Z positions with new depth intensity
+            for (let i = 0; i < positions.length; i += 3) {
+                const originalDepth = pointCloudData.positions[i + 2];
+                positions[i + 2] = originalDepth * depthIntensity;
+            }
+            
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: parseFloat(document.getElementById('pointSize').value),
+                vertexColors: true,
+                sizeAttenuation: true
+            });
+            
+            if (currentPoints) {
+                scene.remove(currentPoints);
+                currentPoints.geometry.dispose();
+                currentPoints.material.dispose();
+            }
+            
+            currentPoints = new THREE.Points(geometry, material);
+            scene.add(currentPoints);
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Resize handling
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html> 

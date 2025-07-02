@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lou Point Cloud Viewer</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #000; 
+            font-family: Arial, sans-serif;
+        }
+        canvas { 
+            display: block; 
+        }
+        #info { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            color: white; 
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .control-group {
+            margin-bottom: 10px;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .control-group input {
+            width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Lou Point Cloud Viewer - Loading...</div>
+    
+    <div id="controls">
+        <div class="control-group">
+            <label for="pointSize">Point Size:</label>
+            <input type="range" id="pointSize" min="0.001" max="0.1" step="0.001" value="0.01">
+        </div>
+        <div class="control-group">
+            <label for="depthIntensity">Depth Intensity:</label>
+            <input type="range" id="depthIntensity" min="0" max="2" step="0.1" value="1">
+        </div>
+        <div class="control-group">
+            <label for="backgroundColor">Background:</label>
+            <input type="color" id="backgroundColor" value="#000000">
+        </div>
+        <div class="control-group">
+            <button id="resetCamera">Reset Camera</button>
+        </div>
+        <div class="control-group">
+            <button id="exportData">Export Point Cloud</button>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <script>
+        // Three.js Setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        camera.position.set(0, 0, 5);
+        controls.update();
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+
+        let currentPoints = null;
+        let originalCameraPosition = null;
+        let originalControlsTarget = null;
+        let pointCloudData = null;
+
+        function createPointCloudFromImages() {
+            // Create canvas to process images
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Load original image
+            const originalImg = new Image();
+            originalImg.crossOrigin = "anonymous";
+            originalImg.onload = function() {
+                canvas.width = originalImg.width;
+                canvas.height = originalImg.height;
+                ctx.drawImage(originalImg, 0, 0);
+                
+                const originalData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // Load depth image
+                const depthImg = new Image();
+                depthImg.crossOrigin = "anonymous";
+                depthImg.onload = function() {
+                    ctx.drawImage(depthImg, 0, 0);
+                    const depthData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    generatePointCloud(originalData, depthData);
+                };
+                depthImg.src = './src/client/assets/data/lou.png'; // Depth map
+            };
+            originalImg.src = './src/client/assets/data/lou.jpg'; // Original image
+        }
+
+        function generatePointCloud(originalData, depthData) {
+            const width = originalData.width;
+            const height = originalData.height;
+            const numPoints = width * height;
+            
+            const positions = new Float32Array(numPoints * 3);
+            const colors = new Float32Array(numPoints * 3);
+            
+            let pointIndex = 0;
+            const depthIntensity = parseFloat(document.getElementById('depthIntensity').value);
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const pixelIndex = (y * width + x) * 4;
+                    
+                    // Normalize coordinates
+                    const u = (x / width) - 0.5;
+                    const v = (y / height) - 0.5;
+                    
+                    // Get color from original image
+                    const r = originalData.data[pixelIndex] / 255;
+                    const g = originalData.data[pixelIndex + 1] / 255;
+                    const b = originalData.data[pixelIndex + 2] / 255;
+                    
+                    // Get depth from depth map (grayscale)
+                    const depth = depthData.data[pixelIndex] / 255;
+                    
+                    // Set position
+                    positions[pointIndex * 3] = u;
+                    positions[pointIndex * 3 + 1] = -v;
+                    positions[pointIndex * 3 + 2] = depth * depthIntensity;
+                    
+                    // Set color
+                    colors[pointIndex * 3] = r;
+                    colors[pointIndex * 3 + 1] = g;
+                    colors[pointIndex * 3 + 2] = b;
+                    
+                    pointIndex++;
+                }
+            }
+            
+            // Store data for export
+            pointCloudData = {
+                positions: Array.from(positions),
+                colors: Array.from(colors),
+                count: numPoints,
+                metadata: {
+                    width: width,
+                    height: height,
+                    exportedAt: new Date().toISOString()
+                }
+            };
+            
+            // Create Three.js geometry
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: parseFloat(document.getElementById('pointSize').value),
+                vertexColors: true,
+                sizeAttenuation: true
+            });
+            
+            if (currentPoints) {
+                scene.remove(currentPoints);
+                currentPoints.geometry.dispose();
+                currentPoints.material.dispose();
+            }
+            
+            currentPoints = new THREE.Points(geometry, material);
+            scene.add(currentPoints);
+            
+            // Auto-adjust camera
+            const box = new THREE.Box3().setFromObject(currentPoints);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fov = camera.fov * (Math.PI / 180);
+            let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+            
+            originalCameraPosition = new THREE.Vector3(center.x, center.y, center.z + cameraZ * 1.5);
+            originalControlsTarget = center.clone();
+            
+            camera.position.copy(originalCameraPosition);
+            controls.target.copy(originalControlsTarget);
+            controls.update();
+            
+            document.getElementById('info').textContent = 
+                `Loaded: ${numPoints} points | Size: ${width} x ${height} | Depth Intensity: ${depthIntensity}`;
+        }
+
+        // Controls
+        document.getElementById('pointSize').addEventListener('input', (e) => {
+            if (currentPoints && currentPoints.material) {
+                currentPoints.material.size = parseFloat(e.target.value);
+            }
+        });
+
+        document.getElementById('depthIntensity').addEventListener('input', (e) => {
+            if (pointCloudData) {
+                generatePointCloudFromStoredData(parseFloat(e.target.value));
+            }
+        });
+
+        document.getElementById('backgroundColor').addEventListener('input', (e) => {
+            renderer.setClearColor(e.target.value);
+        });
+
+        document.getElementById('resetCamera').addEventListener('click', () => {
+            if (originalCameraPosition && originalControlsTarget) {
+                camera.position.copy(originalCameraPosition);
+                controls.target.copy(originalControlsTarget);
+                controls.update();
+            }
+        });
+
+        document.getElementById('exportData').addEventListener('click', () => {
+            if (pointCloudData) {
+                const dataStr = JSON.stringify(pointCloudData, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `lou_pointcloud_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.json`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+            }
+        });
+
+        function generatePointCloudFromStoredData(depthIntensity) {
+            if (!pointCloudData) return;
+            
+            const positions = new Float32Array(pointCloudData.positions);
+            const colors = new Float32Array(pointCloudData.colors);
+            
+            // Update Z positions with new depth intensity
+            for (let i = 0; i < positions.length; i += 3) {
+                const originalDepth = pointCloudData.positions[i + 2];
+                positions[i + 2] = originalDepth * depthIntensity;
+            }
+            
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: parseFloat(document.getElementById('pointSize').value),
+                vertexColors: true,
+                sizeAttenuation: true
+            });
+            
+            if (currentPoints) {
+                scene.remove(currentPoints);
+                currentPoints.geometry.dispose();
+                currentPoints.material.dispose();
+            }
+            
+            currentPoints = new THREE.Points(geometry, material);
+            scene.add(currentPoints);
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Resize handling
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Start loading
+        createPointCloudFromImages();
+    </script>
+</body>
+</html> 

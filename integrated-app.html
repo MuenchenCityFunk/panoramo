@@ -1,0 +1,1933 @@
+// python -m http.server 8080
+// python -m http.server 8080
+//ngrok http 8080
+
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Point Cloud Globe</title>
+    <!-- <link rel="manifest" href="PWA globe/manifest.json"> -->
+    <meta name="theme-color" content="#870050">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: "Helvetica Black", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background: #000;
+            text-transform: uppercase; /* Text in Großbuchstaben */
+            letter-spacing: 5px; /* Buchstabenabstand vergrößern */
+           /* font-stretch: expanded; /* Schrift horizontal strecken */
+            font-weight: 500; /* Extra fett */
+            text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.332); /* Schattierung */
+            transform: scaleX(1); /* Horizontale Verzerrung */
+            max-width: 100vw; /* Maximale Breite ist Bildschirmbreite */
+            overflow-x: hidden; /* Horizontales Scrollen verhindern */
+            word-wrap: break-word; /* Wörter umbrechen wenn nötig */
+            text-overflow: ellipsis; /* Text mit ... abschneiden wenn er zu lang ist */
+        }
+        
+        #ui-overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+        }
+        
+        .btn {
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+            transition: background 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: rgba(0,0,0,0.9);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        #camera-ui {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 2000;
+            display: none;
+        }
+        
+        .camera-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .camera-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        
+        #volume-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgb(0, 0, 0);
+            color: rgb(255, 255, 255);
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 40px;
+            z-index: 1001;
+        }
+        
+        #status {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 1001;
+            display: none;
+        }
+        
+        .status.info { background: rgba(0,123,255,0.8); }
+        .status.success { background: rgba(40,167,69,0.8); }
+        .status.error { background: rgba(220,53,69,0.8); }
+        .status.processing { background: rgba(255,193,7,0.8); }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 150px;
+            height: 8px;
+            background: rgb(0, 0, 0); /* Schwarzer Hintergrund */
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 0; /* Thumb unsichtbar machen */
+            height: 0;
+            background: transparent;
+            border: none;
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 0; /* Für Firefox */
+            height: 0;
+            background: transparent;
+            border: none;
+        }
+        
+        /* Der gefüllte Teil des Sliders */
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, 
+                rgb(255, 255, 255) 0%, 
+                rgb(255, 255, 255) var(--value, 0%), 
+                rgb(0, 0, 0) var(--value, 0%), 
+                rgb(0, 0, 0) 100%
+            );
+            height: 16px;
+            border-radius: 0px;
+        }
+
+        .video-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            text-align: center;
+        }
+
+        #video-preview {
+            width: 320px;
+            height: 240px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        #recording-status {
+            color: white;
+            font-size: 16px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .video-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .video-controls .btn {
+            padding: 10px 15px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Am Anfang der Datei nach den globalen Variablen
+    Prüfe HTTPS-Status beim Laden -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.location.protocol !== 'https:' && 
+                !window.location.hostname.includes('localhost') && 
+                !window.location.hostname.includes('127.0.0.1')) {
+                
+                const warningDiv = document.createElement('div');
+                warningDiv.style.cssText = `
+                    position: fixed; top: 0; left: 0; right: 0; 
+                    background: #ff6b6b; color: white; padding: 10px; 
+                    text-align: center; z-index: 9999; font-weight: bold;
+                `;
+                warningDiv.textContent = "⚠️ HTTPS erforderlich für Video-Aufnahme auf Mobilgeräten!";
+                document.body.appendChild(warningDiv);
+            }
+        });
+    </script>
+
+    <!-- Haupt-UI -->
+    <div id="ui-overlay">
+        <button class="btn" id="capture-btn">NEWPNTCLD</button>
+        <button class="btn" id="toggle-path-btn">ANTPATH</button>
+        <button class="btn" id="center-camera-btn">CNTCAM</button>
+        <button class="btn" id="load-panorama-btn">LOAD PANORAMA</button>
+        <button class="btn" id="load-all-panoramas-btn" style="background-color: #8844ff;">LOAD ALL PANORAMAS</button>
+        
+        <!-- NEUE VIDEO-UPLOAD BUTTONS -->
+        <button class="btn" id="record-video-btn" style="background-color: #ff4444;">RECORD VIDEO</button>
+        <button class="btn" id="upload-video-btn" style="background-color: #44aa44;">UPLOAD VIDEO</button>
+        
+        <!-- Point Cloud Controls -->
+        <div style="margin-top: 10px; background: rgba(0, 0, 0, 0.7); padding: 30px; border-radius: 8px; border: 0px solid rgba(255, 255, 255, 0.8)">
+            <label for="pointSize" style="color: white; font-size: 40px; display: block; margin-bottom: 5px;">PNTS</label>
+            <input type="range" id="pointSize" min="0.001" max="2.0" step="0.001" value="0.05" style="width: 150px;">
+            <span id="pointSizeValue" style="color: white; font-size: 12px; margin-left: 10px;">0.05</span>
+        </div>
+    </div>
+    
+    <!-- Status-Anzeige -->
+    <div id="status"></div>
+    
+    <!-- Kamera-UI (versteckt) -->
+    <div id="camera-ui">
+        <div class="camera-container">
+            <video id="video" autoplay playsinline></video>
+            <canvas id="canvas" style="display: none;"></canvas>
+            <div id="volume-display">NOISE 0%</div>
+            <div class="camera-controls">
+                <button class="btn" id="capture-photo-btn" disabled>SCAN</button>
+                <button class="btn" id="cancel-capture-btn">BACK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEUE VIDEO-AUFNAHME UI -->
+    <div id="video-recording-ui" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 1000;">
+        <div class="video-container">
+            <video id="video-preview" autoplay playsinline muted></video>
+            <canvas id="video-canvas" style="display: none;"></canvas>
+            <div id="recording-status">BEREIT ZUM AUFNEHMEN</div>
+            <div class="video-controls">
+                <button class="btn" id="start-recording-btn">START RECORDING</button>
+                <button class="btn" id="stop-recording-btn" disabled>STOP RECORDING</button>
+                <button class="btn" id="cancel-recording-btn">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Three.js Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/PLYLoader.js"></script>
+    
+    <script>
+        // ===== GLOBALE VARIABLEN =====
+        let stream = null;
+        let audioStream = null;
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let capturedImageData = null;
+        let capturedDbLevel = 0;
+        let userLocation = null;
+        let userLocationObject = null;
+        let userPath = [];
+        let pathLine = null;
+        let pathGeometry = null;
+        let objectsToUpdate = [];
+        let scanGPSLocation = null;
+        let loadedPanoramas = []; // Neue Variable für geladene Panoramen
+        
+        // Neue globale Variablen für Video-Aufnahme
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let videoStream = null;
+        let isRecording = false;
+        let recordingStartTime = null;
+        
+        // Ersetze die FLASK_API_URL Definition (ca. Zeile 302)
+        // Automatische URL-Erkennung für Entwicklung und Produktion
+        function getFlaskApiUrl() {
+            const isLocalDevelopment = window.location.hostname === 'localhost' || 
+                                     window.location.hostname === '127.0.0.1';
+            
+            if (isLocalDevelopment) {
+                // Lokale Entwicklung - verwende localhost
+                return 'http://localhost:5001/api';
+            } else {
+                // Produktion - verwende relativen Pfad
+                return '/api';
+            }
+        }
+        
+        const FLASK_API_URL = getFlaskApiUrl();
+        console.log("Flask API URL:", FLASK_API_URL);
+        
+        // ===== THREE.JS SETUP =====
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(w, h);
+        renderer.setClearColor(0x000000);
+        document.body.appendChild(renderer.domElement);
+        
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        
+        // ===== HILFSFUNKTIONEN =====
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        // ===== ANIMATION LOOP =====
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Update alle Objekte
+            objectsToUpdate.forEach(obj => {
+                if (obj.update) obj.update();
+            });
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        // ===== EVENT LISTENERS =====
+        document.getElementById('capture-btn').addEventListener('click', () => {
+            document.getElementById('camera-ui').style.display = 'block';
+            initCamera();
+        });
+        
+        document.getElementById('capture-photo-btn').addEventListener('click', capturePhoto);
+        
+        document.getElementById('cancel-capture-btn').addEventListener('click', () => {
+            document.getElementById('camera-ui').style.display = 'none';
+            stopCamera();
+        });
+        
+        // ===== ZUSÄTZLICHE EVENT LISTENERS =====
+        document.getElementById('toggle-path-btn').addEventListener('click', togglePath);
+        document.getElementById('center-camera-btn').addEventListener('click', centerCameraOnUser);
+        document.getElementById('load-panorama-btn').addEventListener('click', loadPanoramaFromServer);
+        
+        // Punktgrößen-Slider
+        document.getElementById('pointSize').addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            document.getElementById('pointSizeValue').textContent = value.toFixed(3);
+            
+            // Update alle Point Clouds in der Szene
+            scene.children.forEach(child => {
+                if (child.type === 'Points' && child.material) {
+                    child.material.size = value;
+                }
+            });
+        });
+        
+        // ===== KAMERA UND POINT CLOUD FUNKTIONEN =====
+        
+        // Kamera initialisieren
+        async function initCamera() {
+            try {
+                showStatus("Kamera wird gestartet...", "info");
+                
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    },
+                    audio: true
+                });
+                
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+                await video.play();
+                
+                // Mikrofon initialisieren
+                await initMicrophone();
+                startVolumeMonitoring();
+                
+                // Foto-Button aktivieren
+                document.getElementById('capture-photo-btn').disabled = false;
+                
+                showStatus("Kamera bereit!", "success");
+                console.log("Kamera erfolgreich gestartet");
+                
+            } catch (error) {
+                console.error('Kamera Fehler:', error);
+                showStatus('Kamera Fehler: ' + error.message, 'error');
+            }
+        }
+        
+        // Mikrofon initialisieren
+        async function initMicrophone() {
+            try {
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(audioStream);
+                
+                analyser.fftSize = 256;
+                microphone.connect(analyser);
+                
+                console.log("Mikrofon erfolgreich initialisiert");
+                
+            } catch (error) {
+                console.error('Mikrofon Fehler:', error);
+                showStatus('Mikrofon Fehler: ' + error.message, 'error');
+            }
+        }
+        
+        // Lautstärke messen
+        function measureVolume() {
+            if (!analyser) return 0;
+            
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+            
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            return (sum / dataArray.length) / 255;
+        }
+        
+        // Lautstärke-Monitoring starten
+        function startVolumeMonitoring() {
+            const volumeDisplay = document.getElementById('volume-display');
+            
+            function updateVolume() {
+                const volume = measureVolume();
+                const db = Math.round(volume * 100);
+                volumeDisplay.textContent = `🔊 ${db}%`;
+                
+                if (volume > 0.7) {
+                    volumeDisplay.style.background = 'rgba(255,0,0,0.8)';
+                } else if (volume > 0.4) {
+                    volumeDisplay.style.background = 'rgba(255,165,0,0.8)';
+                } else {
+                    volumeDisplay.style.background = 'rgba(0,0,0,0.7)';
+                }
+            }
+            
+            setInterval(updateVolume, 100);
+        }
+        
+        // Foto aufnehmen
+        function capturePhoto() {
+            try {
+                // GPS-Position beim Scannen speichern
+                scanGPSLocation = userLocation; // Aktuelle GPS-Position speichern
+                
+                // Lautstärke beim Aufnehmen speichern
+                capturedDbLevel = measureVolume();
+                console.log('📸 Aufgenommene Lautstärke:', capturedDbLevel);
+                console.log('📍 GPS-Position beim Scannen:', scanGPSLocation);
+                
+                const video = document.getElementById('video');
+                const canvas = document.getElementById('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0);
+                
+                capturedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                showStatus("Foto aufgenommen! Generiere Point Cloud...", "processing");
+                
+                // Kamera stoppen
+                stopCamera();
+                
+                // Point Cloud generieren und platzieren
+                generateAndPlacePointCloud();
+                
+                // Zurück zur Map
+                document.getElementById('camera-ui').style.display = 'none';
+                
+            } catch (error) {
+                console.error('Foto-Aufnahme Fehler:', error);
+                showStatus('Foto-Aufnahme Fehler: ' + error.message, 'error');
+            }
+        }
+        
+        // Kamera stoppen
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+                audioStream = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+        }
+        
+        // ===== EXAKTER POINT CLOUD GENERATOR (aus camera-app.html) =====
+        
+        // Point Cloud aus Bild generieren mit echten GPS-Koordinaten
+        function generatePointCloudFromImage(imageData, dbLevel, gpsPosition) {
+            const startTime = Date.now();
+            console.log('🟡 Starting Point Cloud generation...');
+            console.log('📍 GPS-Position für Point Cloud:', gpsPosition);
+            
+            if (!imageData) {
+                console.error('🔴 No image data available!');
+                showStatus('Kein Foto verfügbar!', 'error');
+                return null;
+            }
+
+            showStatus('Point Cloud wird generiert...', 'processing');
+            
+            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const originalPixels = imageData.width * imageData.height;
+            let defaultDownsample;
+
+            if (originalPixels > 4000000) defaultDownsample = 15;      // 4MP+ -> 15x (2.7x besser)
+            else if (originalPixels > 2000000) defaultDownsample = 10; // 2MP+ -> 10x (3x besser)  
+            else if (originalPixels > 1000000) defaultDownsample = 7;  // 1MP+ -> 7x (2.9x besser)
+            else defaultDownsample = 4;                                 // <1MP -> 4x (2.5x besser)
+            
+            const downsampleFactor = defaultDownsample;
+            
+            console.log('📊 Downsample factor:', downsampleFactor);
+            console.log('📱 Is mobile:', isMobile);
+            
+            const downsampledImage = downsampleImageData(imageData, downsampleFactor);
+            const depthMap = generateDepthMapData(downsampledImage);
+            
+            const width = downsampledImage.width;
+            const height = downsampledImage.height;
+            const numPoints = width * height;
+            
+            console.log('📐 Original size:', imageData.width, 'x', imageData.height);
+            console.log('📐 Processed size:', width, 'x', height);
+            console.log('🔢 Total points:', numPoints.toLocaleString());
+            
+            const maxPoints = isMobile ? 300000 : 600000;
+            if (numPoints > maxPoints) {
+                console.error(' Too many points:', numPoints, '>', maxPoints);
+                showStatus(`Zu viele Punkte (${numPoints.toLocaleString()})! Erhöhen Sie Downsample.`, 'error');
+                return null;
+            }
+            
+            const positions = new Float32Array(numPoints * 3);
+            const colors = new Float32Array(numPoints * 3);
+            
+            let pointIndex = 0;
+            
+            // Progress-Update alle 1000 Punkte
+            const progressInterval = Math.max(1, Math.floor(numPoints / 10));
+            
+            // GPS-Position in 3D-Koordinaten umwandeln
+            const gps3DPosition = geoTo3D(gpsPosition.lat, gpsPosition.lon);
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const pixelIndex = (y * width + x) * 4;
+                    
+                    const u = (x / width) - 0.5;    // -0.5 bis +0.5
+                    const v = (y / height) - 0.5;   // -0.5 bis +0.5
+                    
+                    const r = downsampledImage.data[pixelIndex] / 255;
+                    const g = downsampledImage.data[pixelIndex + 1] / 255;
+                    const b = downsampledImage.data[pixelIndex + 2] / 255;
+                    
+                    const depth = depthMap[pixelIndex] / 255;
+                    
+                    // ECHTE GPS-KOORDINATEN verwenden
+                    positions[pointIndex * 3] = gps3DPosition.x + (u * 2);           // GPS + Offset
+                    positions[pointIndex * 3 + 1] = gps3DPosition.y + (-v * 2);      // GPS + Offset
+                    positions[pointIndex * 3 + 2] = gps3DPosition.z + (depth * dbLevel * 2);
+                    
+                    colors[pointIndex * 3] = r;
+                    colors[pointIndex * 3 + 1] = g;
+                    colors[pointIndex * 3 + 2] = b;
+                    
+                    pointIndex++;
+                    
+                    if (pointIndex % progressInterval === 0) {
+                        const progress = Math.round((pointIndex / numPoints) * 100);
+                        showStatus(`Generierung: ${progress}%`, 'processing');
+                    }
+                }
+            }
+            
+            const endTime = Date.now();
+            console.log('🟢 Point Cloud generation completed in:', endTime - startTime, 'ms');
+            console.log('✅ Points generated:', numPoints.toLocaleString());
+            console.log('📍 Point Cloud Position:', gps3DPosition);
+            
+            return {
+                positions: positions,
+                colors: colors,
+                count: numPoints,
+                metadata: {
+                    originalWidth: imageData.width,
+                    originalHeight: imageData.height,
+                    processedWidth: width,
+                    processedHeight: height,
+                    downsampleFactor: downsampleFactor,
+                    depthIntensity: dbLevel * 2.5,
+                    capturedVolume: dbLevel,
+                    gpsPosition: gpsPosition,
+                    gps3DPosition: gps3DPosition,
+                    generatedAt: new Date().toISOString()
+                }
+            };
+        }
+        
+        // Downsample Image Data (exakter Code aus camera-app.html)
+        function downsampleImageData(imageData, factor) {
+            const originalWidth = imageData.width;
+            const originalHeight = imageData.height;
+            const newWidth = Math.floor(originalWidth / factor);
+            const newHeight = Math.floor(originalHeight / factor);
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = originalWidth;
+            tempCanvas.height = originalHeight;
+            
+            const tempImageData = new ImageData(
+                new Uint8ClampedArray(imageData.data),
+                originalWidth,
+                originalHeight
+            );
+            tempCtx.putImageData(tempImageData, 0, 0);
+            ctx.drawImage(tempCanvas, 0, 0, newWidth, newHeight);
+            
+            return ctx.getImageData(0, 0, newWidth, newHeight);
+        }
+        
+        // Depth Map Daten generieren (exakter Code aus camera-app.html)
+        function generateDepthMapData(imageData) {
+            const data = new Uint8ClampedArray(imageData.data);
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                data[i] = gray;
+                data[i + 1] = gray;
+                data[i + 2] = gray;
+            }
+            
+            return data;
+        }
+        
+        // Point Cloud in Szene erstellen (angepasst für echte GPS-Koordinaten)
+        function createPointCloudInScene(pointCloudData, position) {
+            if (!pointCloudData) return;
+            
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(pointCloudData.positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(pointCloudData.colors, 3));
+            
+            const pointSize = parseFloat(document.getElementById('pointSize').value);
+            
+            const material = new THREE.PointsMaterial({
+                size: pointSize,
+                vertexColors: true,
+                sizeAttenuation: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const pointCloud = new THREE.Points(geometry, material);
+            pointCloud.position.set(0, 0, 0); // Keine zusätzliche Positionierung, da Punkte bereits GPS-Koordinaten haben
+            pointCloud.scale.setScalar(0.5);
+            
+            scene.add(pointCloud);
+            
+            const pointCloudObject = {
+                mesh: pointCloud,
+                geometry: geometry,
+                material: material,
+                originalVertices: [...pointCloudData.positions],
+                update: () => {
+                    // Sanfte Rotation
+                    // pointCloud.rotation.y += 0.001;
+                }
+            };
+            
+            objectsToUpdate.push(pointCloudObject);
+            
+            // Kamera auf Point Cloud zentrieren (GPS-Position aus Metadaten)
+            const gpsPos = pointCloudData.metadata.gps3DPosition;
+            camera.position.set(gpsPos.x + 3, gpsPos.y + 3, gpsPos.z + 3);
+            camera.lookAt(gpsPos.x, gpsPos.y, gpsPos.z);
+            controls.target.set(gpsPos.x, gpsPos.y, gpsPos.z);
+            controls.update();
+            
+            console.log("Point Cloud zur Szene hinzugefügt bei GPS-Position:", gpsPos);
+            console.log("Point Cloud Punkte:", pointCloudData.count);
+            
+            showStatus(`${pointCloudData.count.toLocaleString()} Punkte erstellt!`, 'success');
+        }
+        
+        // Globale Variable für aktuelle Point Cloud
+        let currentPointCloud = null;
+        
+        // Point Cloud generieren und platzieren
+        function generateAndPlacePointCloud() {
+            if (!capturedImageData || !scanGPSLocation) {
+                showStatus("Keine Foto-Daten oder GPS-Position beim Scannen verfügbar", "error");
+                return;
+            }
+            
+            showStatus("Point Cloud wird generiert...", "processing");
+            
+            // Point Cloud mit echten GPS-Koordinaten generieren
+            const pointCloudData = generatePointCloudFromImage(capturedImageData, capturedDbLevel, scanGPSLocation);
+            
+            if (!pointCloudData) {
+                showStatus("Point Cloud Generierung fehlgeschlagen", "error");
+                return;
+            }
+            
+            // Point Cloud in der Szene platzieren (Punkte haben bereits GPS-Koordinaten)
+            createPointCloudInScene(pointCloudData, { x: 0, y: 0, z: 0 }); // Keine zusätzliche Positionierung
+            
+            // Aktuelle Point Cloud speichern
+            currentPointCloud = pointCloudData;
+        }
+        
+        // ===== GPS UND MAP FUNKTIONALITÄT =====
+        
+        // GPS-Koordinaten zu 3D-Position umwandeln
+        function geoTo3D(lat, lon) { 
+            // Europa Bounding Box für Berlin/Paris Region
+            const minLat = 35.0; // Südlichster Punkt
+            const maxLat = 70.0; // Nördlichster Punkt
+            const minLon = -10.0; // Westlichster Punkt
+            const maxLon = 40.0;  // Östlichster Punkt
+            
+            // Normalisieren (0-1)
+            const normalizedLat = (lat - minLat) / (maxLat - minLat);
+            const normalizedLon = (lon - minLon) / (maxLon - minLon);
+            
+            // Zu 3D-Koordinaten mappen mit größerem Skalierungsfaktor
+            const x = (normalizedLon - 0.5) * 100; // -50 bis +50
+            const z = (normalizedLat - 0.5) * 100; // --50 bis +50
+            const y = 0; // Höhe (kann später angepasst werden)
+            
+            return { x, y, z };
+        }
+        
+        // Benutzer-Position verfolgen
+        function getUserLocation() {
+            if ("geolocation" in navigator) {
+                console.log("GPS verfügbar - starte Ortung...");
+                showStatus("GPS wird initialisiert...", "info");
+                
+                // Path-Geometrie erstellen
+                pathGeometry = new THREE.BufferGeometry();
+                const pathMaterial = new THREE.LineBasicMaterial({
+                    color: 0x00ff00,
+                    linewidth: 5,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                
+                // Path-Line erstellen
+                pathLine = new THREE.Line(pathGeometry, pathMaterial);
+                scene.add(pathLine);
+                
+                // Position überwachen
+                const watchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        const newLocation = {
+                            lat: position.coords.latitude,
+                            lon: position.coords.longitude
+                        };
+                        
+                        console.log("GPS Position erhalten:", newLocation);
+                        console.log("GPS Genauigkeit:", position.coords.accuracy, "Meter");
+                        
+                        // Benutzer-Position aktualisieren
+                        userLocation = newLocation;
+                        
+                        // 3D-Position berechnen
+                        const pathPoint = geoTo3D(newLocation.lat, newLocation.lon);
+                        
+                        // Prüfen ob Bewegung signifikant ist (> 0.1 Einheiten)
+                        let shouldAddPoint = true;
+                        if (userPath.length > 0) {
+                            const lastPoint = userPath[userPath.length - 1];
+                            const distance = Math.sqrt(
+                                Math.pow(pathPoint.x - lastPoint.x, 2) + 
+                                Math.pow(pathPoint.y - lastPoint.y, 2) + 
+                                Math.pow(pathPoint.z - lastPoint.z, 2)
+                            );
+                            
+                            console.log("📍 Distanz:", distance.toFixed(6));
+                            
+                            // TEMPORÄR: Alle Punkte hinzufügen
+                            shouldAddPoint = true;
+                            console.log("📍 Temporär: Alle Punkte hinzufügen");
+                        }
+                        
+                        if (shouldAddPoint) {
+                            userPath.push(pathPoint);
+                            console.log("Neuen Pfad-Punkt hinzugefügt:", pathPoint);
+                            console.log("Gesamte Pfad-Punkte:", userPath.length);
+                            
+                            // Pfad-Line aktualisieren
+                            updatePathLine();
+                        }
+                        
+                        // Benutzer-Objekt aktualisieren oder erstellen
+                        if (userLocationObject) {
+                            userLocationObject.mesh.position.set(pathPoint.x, pathPoint.y, pathPoint.z);
+                            console.log("Benutzer-Objekt Position aktualisiert");
+                        } else {
+                            userLocationObject = createUserLocationObject(pathPoint);
+                            scene.add(userLocationObject.mesh);
+                            objectsToUpdate.push(userLocationObject);
+                            console.log("Neues Benutzer-Objekt erstellt bei:", pathPoint);
+                        }
+                        
+                        // Kamera beim ersten Mal auf Benutzer zentrieren
+                        if (userPath.length === 1) {
+                            camera.position.set(pathPoint.x + 5, pathPoint.y + 5, pathPoint.z + 5);
+                            camera.lookAt(pathPoint.x, pathPoint.y, pathPoint.z);
+                            controls.target.set(pathPoint.x, pathPoint.y, pathPoint.z);
+                            controls.update();
+                            console.log("Kamera auf Benutzer-Position zentriert");
+                            showStatus("GPS aktiv! Position gefunden.", "success");
+                        }
+                    },
+                    (error) => {
+                        console.error("GPS Fehler:", error);
+                        showStatus("GPS Fehler: " + error.message, "error");
+                        
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                                alert("Bitte erlaube Standortzugriff in deinen Browser-Einstellungen!");
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                alert("GPS-Position nicht verfügbar. Prüfe deine GPS-Einstellungen.");
+                                break;
+                            case error.TIMEOUT:
+                                alert("GPS-Zeitüberschreitung. Versuche es nochmal.");
+                                break;
+                            default:
+                                alert("Unbekannter GPS-Fehler: " + error.message);
+                                break;
+                        }
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 15000,
+                        maximumAge: 0
+                    }
+                );
+                
+                // Watch-ID für späteres Aufräumen speichern
+                window.locationWatchId = watchId;
+                console.log("GPS Watch gestartet mit ID:", watchId);
+                
+            } else {
+                console.error("Geolocation nicht unterstützt");
+                showStatus("GPS wird von deinem Browser nicht unterstützt.", "error");
+            }
+        }
+        
+        // Benutzer - Objekt erstellen
+            function createUserLocationObject(position) {
+                const vertices = [] 
+                const numPoints = 100; 
+                const size = 1; 
+                let x,y,z; 
+
+            // Punkte um (0,0,0) generieren (nur Offset, keine GPS-Koordinaten)
+            for (let i = 0; i < numPoints; i += 1) { 
+                x = Math.random() * size - size * 0.5; // -0.5 bis +0.5
+                y = Math.random() * size - size * 0.5; 
+                z = Math.random() * size - size * 0.5; 
+                vertices.push(x, y, z); 
+            }
+
+            // Drei spezifische Punkte bei (0,0,0)
+            //vertices.push(
+           //     0, 0, 0,           // Zentrum
+            //    0, 1, 0,           // 1 nach oben
+             //   0, 0, 1            // 1 nach vorne
+            //); 
+
+            const geometry = new THREE.BufferGeometry(); 
+            const material = new THREE.MeshBasicMaterial({ 
+                color: 0xff0000, 
+                wireframe: true, 
+                side: THREE.DoubleSide, 
+                transparent: true, 
+                opacity: 0.5
+            }); 
+            geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+            const mesh = new THREE.Mesh(geometry, material); 
+            mesh.position.set(position.x, position.y, position.z); // GPS-Position setzen
+        
+            return { mesh }; 
+        }
+        
+        // Pfad-Line aktualisieren
+        function updatePathLine() {
+            if (pathGeometry && userPath.length > 0) {
+                const positions = [];
+                userPath.forEach(point => {
+                    positions.push(point.x, point.y, point.z);
+                });
+                
+                pathGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                pathGeometry.attributes.position.needsUpdate = true;
+                
+                // Pfad-Line explizit sichtbar machen
+                if (pathLine) {
+                    pathLine.visible = true;
+                    console.log("Pfad-Line sichtbar gemacht");
+                }
+            }
+        }
+        
+        // Pfad ein-/ausschalten
+        let pathVisible = true;
+        function togglePath() {
+            pathVisible = !pathVisible;
+            if (pathLine) {
+                pathLine.visible = pathVisible;
+            }
+            showStatus(`Pfad ${pathVisible ? 'eingeschaltet' : 'ausgeschaltet'}`, 'info');
+        }
+        
+        // Kamera auf Benutzer zentrieren
+        function centerCameraOnUser() {
+            if (userLocation) {
+                const position = geoTo3D(userLocation.lat, userLocation.lon);
+                camera.position.set(position.x + 5, position.y + 5, position.z + 5);
+                camera.lookAt(position.x, position.y, position.z);
+                controls.target.set(position.x, position.y, position.z);
+                controls.update();
+                showStatus("Kamera auf Benutzer zentriert", "success");
+            } else {
+                showStatus("Keine GPS-Position verfügbar", "error");
+            }
+        }
+        
+        // ===== PANORAMA LOADING FUNKTIONEN =====
+        
+        // Neue Funktion für 360° Panorama-Sphäre mit Depth Map
+        async function createPanoramaSphereFromDepthMap(imageUrl, depthMapUrl, metadata) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const depthImg = new Image();
+                img.crossOrigin = "anonymous";
+                depthImg.crossOrigin = "anonymous";
+                
+                let imageLoaded = false;
+                let depthLoaded = false;
+                
+                const checkBothLoaded = () => {
+                    if (imageLoaded && depthLoaded) {
+                        createSpherePointCloud();
+                    }
+                };
+                
+                img.onload = () => {
+                    imageLoaded = true;
+                    checkBothLoaded();
+                };
+                
+                depthImg.onload = () => {
+                    depthLoaded = true;
+                    checkBothLoaded();
+                };
+                
+                img.onerror = () => reject(new Error("Konnte Panorama-Bild nicht laden"));
+                depthImg.onerror = () => reject(new Error("Konnte Depth Map nicht laden"));
+                
+                img.src = imageUrl;
+                depthImg.src = depthMapUrl;
+                
+                function createSpherePointCloud() {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        
+                        ctx.drawImage(img, 0, 0);
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        
+                        ctx.drawImage(depthImg, 0, 0);
+                        const depthData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        
+                        const gpsCoords = metadata.gps_coordinates;
+                        const gps3DPosition = geoTo3D(gpsCoords.lat, gpsCoords.lon);
+                        
+                        const width = canvas.width;
+                        const height = canvas.height;
+                        const numPoints = width * height;
+                        const positions = new Float32Array(numPoints * 3);
+                        const colors = new Float32Array(numPoints * 3);
+                        
+                        const baseRadius = 25.0;
+                        const depthInfluence = 8.0;
+                        
+                        let pointIndex = 0;
+                        const progressInterval = Math.max(1, Math.floor(numPoints / 10));
+                        
+                        for (let y = 0; y < height; y++) {
+                            for (let x = 0; x < width; x++) {
+                                const pixelIndex = (y * width + x) * 4;
+                                
+                                const u = (x / width) * 2 * Math.PI;
+                                const v = (y / height) * Math.PI;
+                                
+                                const r = imageData.data[pixelIndex] / 255;
+                                const g = imageData.data[pixelIndex + 1] / 255;
+                                const b = imageData.data[pixelIndex + 2] / 255;
+                                
+                                const depth = depthData.data[pixelIndex] / 255;
+                                
+                                const depthRadius = baseRadius + (depth * depthInfluence);
+                                
+                                const sphereX = depthRadius * Math.sin(v) * Math.cos(u);
+                                const sphereY = depthRadius * Math.cos(v);
+                                const sphereZ = depthRadius * Math.sin(v) * Math.sin(u);
+                                
+                                positions[pointIndex * 3] = gps3DPosition.x + sphereX;
+                                positions[pointIndex * 3 + 1] = gps3DPosition.y + sphereY;
+                                positions[pointIndex * 3 + 2] = gps3DPosition.z + sphereZ;
+                                
+                                colors[pointIndex * 3] = r;
+                                colors[pointIndex * 3 + 1] = g;
+                                colors[pointIndex * 3 + 2] = b;
+                                
+                                pointIndex++;
+                                
+                                if (pointIndex % progressInterval === 0) {
+                                    const progress = Math.round((pointIndex / numPoints) * 100);
+                                    showStatus(`Sphäre-Generierung: ${progress}%`, 'processing');
+                                }
+                            }
+                        }
+                        
+                        const pointCloudData = {
+                            positions: positions,
+                            colors: colors,
+                            count: numPoints,
+                            metadata: {
+                                ...metadata,
+                                type: 'panorama_sphere',
+                                baseRadius: baseRadius,
+                                depthInfluence: depthInfluence,
+                                gps3DPosition: gps3DPosition
+                            }
+                        };
+                        
+                        createPointCloudInScene(pointCloudData, { x: 0, y: 0, z: 0 });
+                        
+                        loadedPanoramas.push({
+                            metadata: metadata,
+                            pointCloudData: pointCloudData,
+                            imageUrl: imageUrl,
+                            depthMapUrl: depthMapUrl,
+                            type: 'sphere'
+                        });
+                        
+                        console.log("✅ 360° Panorama-Sphäre mit Depth Map erfolgreich erstellt");
+                        console.log("📍 Sphäre-Position:", gps3DPosition);
+                        console.log("🔵 Sphäre-Radius:", baseRadius);
+                        resolve();
+                        
+                    } catch (error) {
+                        reject(error);
+                    }
+                }
+            });
+        }
+
+        // Erweiterte Funktion zum Laden von Panorama mit Depth Map
+        async function loadPanoramaFromServer() {
+            let metadata;
+            
+            try {
+                showStatus("Lade Panorama mit Depth Map vom Server...", "processing");
+                
+                // Metadaten laden
+                const isLocalDevelopment = window.location.protocol === 'file:';
+                let metadataUrl = isLocalDevelopment ? 
+                    './output/panorama_metadata.json' : 
+                    `${window.location.origin}/output/panorama_metadata.json`;
+                
+                const metadataResponse = await fetch(metadataUrl);
+                if (!metadataResponse.ok) {
+                    throw new Error('Keine Panorama-Metadaten gefunden.');
+                }
+                
+                metadata = await metadataResponse.json();
+                console.log("✅ Panorama-Metadaten geladen:", metadata);
+                
+                // Prüfe ob Depth Map existiert
+                const depthMapFile = metadata.additional_files?.find(file => file.type === 'depth_map');
+                if (!depthMapFile) {
+                    throw new Error('Keine Depth Map gefunden. Verwende Standard-Point Cloud.');
+                }
+                
+                // URLs für Panorama und Depth Map
+                const panoramaUrl = isLocalDevelopment ? 
+                    `./output/${metadata.panorama_file}` : 
+                    `${window.location.origin}/output/${metadata.panorama_file}`;
+                    
+                const depthMapFileUrl = isLocalDevelopment ? 
+                    `./output/${depthMapFile.filename}` : 
+                    `${window.location.origin}/output/${depthMapFile.filename}`;
+                
+                // Prüfe ob Dateien existieren
+                const [panoramaResponse, depthMapResponse] = await Promise.all([
+                    fetch(panoramaUrl),
+                    fetch(depthMapFileUrl)
+                ]);
+                
+                if (!panoramaResponse.ok) {
+                    throw new Error(`Panorama-Datei nicht gefunden: ${metadata.panorama_file}`);
+                }
+                
+                if (!depthMapResponse.ok) {
+                    throw new Error(`Depth Map nicht gefunden: ${depthMapFile.filename}`);
+                }
+                
+                showStatus("Erstelle 360° Panorama-Sphäre mit Depth Map...", "processing");
+                
+                // Blob-URLs erstellen
+                const panoramaBlob = await panoramaResponse.blob();
+                const depthMapBlob = await depthMapResponse.blob();
+                const imageUrl = URL.createObjectURL(panoramaBlob);
+                const depthMapBlobUrl = URL.createObjectURL(depthMapBlob);
+                
+                // 360° Sphäre mit Depth Map erstellen
+                await createPanoramaSphereFromDepthMap(imageUrl, depthMapBlobUrl, metadata);
+                
+                showStatus(`360° Panorama-Sphäre erfolgreich geladen! (${metadata.image_width}x${metadata.image_height})`, "success");
+                
+            } catch (error) {
+                console.error("❌ Fehler beim Laden des Panoramas:", error);
+                showStatus(`Fehler: ${error.message}`, "error");
+                
+                // Fallback: Standard-Point Cloud ohne Depth Map
+                if (metadata) {
+                    try {
+                        showStatus("Versuche Standard-Point Cloud...", "info");
+                        
+                        // isLocalDevelopment im Fallback neu definieren
+                        const isLocalDev = window.location.protocol === 'file:';
+                        const panoramaUrl = isLocalDev ? 
+                            `./output/${metadata.panorama_file}` : 
+                            `${window.location.origin}/output/${metadata.panorama_file}`;
+                            
+                        const panoramaResponse = await fetch(panoramaUrl);
+                        const panoramaBlob = await panoramaResponse.blob();
+                        const imageUrl = URL.createObjectURL(panoramaBlob);
+                        await createPointCloudFromPanorama(imageUrl, metadata);
+                    } catch (fallbackError) {
+                        console.error("❌ Auch Fallback fehlgeschlagen:", fallbackError);
+                    }
+                }
+            }
+        }
+        
+        // Point Cloud aus Panorama-Bild erstellen
+        async function createPointCloudFromPanorama(imageUrl, metadata) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                
+                img.onload = () => {
+                    try {
+                        // Erstelle Canvas und lade Bild
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        
+                        // Hole Bilddaten
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        
+                        // GPS-Koordinaten aus Metadaten
+                        const gpsCoords = metadata.gps_coordinates;
+                        console.log("📍 GPS-Koordinaten für Panorama:", gpsCoords);
+                        
+                        // Erstelle Point Cloud mit GPS-Koordinaten
+                        const pointCloudData = generatePointCloudFromImage(
+                            imageData, 
+                            0.5, // Standard-Lautstärke für Panoramen
+                            { lat: gpsCoords.lat, lon: gpsCoords.lon }
+                        );
+                        
+                        if (pointCloudData) {
+                            // Point Cloud in Szene platzieren
+                            createPointCloudInScene(pointCloudData, { x: 0, y: 0, z: 0 });
+                            
+                            // Zur Liste der geladenen Panoramen hinzufügen
+                            loadedPanoramas.push({
+                                metadata: metadata,
+                                pointCloudData: pointCloudData,
+                                imageUrl: imageUrl
+                            });
+                            
+                            console.log("✅ Panorama-Point Cloud erfolgreich erstellt");
+                            resolve();
+                        } else {
+                            reject(new Error("Point Cloud Generierung fehlgeschlagen"));
+                        }
+                        
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                img.onerror = () => {
+                    reject(new Error("Konnte Panorama-Bild nicht laden"));
+                };
+                
+                img.src = imageUrl;
+            });
+        }
+
+        // Neue Funktion: Lade alle verfügbaren Panoramen
+        async function loadAllAvailablePanoramas() {
+            try {
+                showStatus("Lade alle verfügbaren Panoramen...", "processing");
+                
+                const isLocalDevelopment = window.location.protocol === 'file:';
+                
+                // Lade die Metadaten-Datei zuerst
+                let metadataUrl = isLocalDevelopment ? 
+                    './output/panorama_metadata.json' : 
+                    `${window.location.origin}/output/panorama_metadata.json`;
+                
+                const metadataResponse = await fetch(metadataUrl);
+                if (!metadataResponse.ok) {
+                    throw new Error('Keine Panorama-Metadaten gefunden.');
+                }
+                
+                const metadata = await metadataResponse.json();
+                console.log("📄 Haupt-Metadaten geladen:", metadata);
+                
+                // Lade das Hauptpanorama aus den Metadaten
+                await loadSpecificPanorama(metadata);
+                
+                // Dynamisch alle verfügbaren Panoramen aus den Metadaten extrahieren
+                const panoramaFiles = [];
+                
+                // Füge das Hauptpanorama hinzu
+                if (metadata.panorama_file) {
+                    panoramaFiles.push(metadata.panorama_file);
+                }
+                
+                // Füge alle zusätzlichen Panoramen aus den Metadaten hinzu
+                if (metadata.additional_files) {
+                    metadata.additional_files.forEach(file => {
+                        if (file.type === 'depth_map') {
+                            // Konvertiere depth_map Dateiname zu panorama Dateiname
+                            const panoramaName = file.filename.replace('depth_map_', '').replace('.png', '');
+                            const panoramaFile = `${panoramaName}.jpg`;
+                            if (!panoramaFiles.includes(panoramaFile)) {
+                                panoramaFiles.push(panoramaFile);
+                            }
+                        }
+                    });
+                }
+                
+                console.log("🔍 Gefundene Panorama-Dateien:", panoramaFiles);
+                
+                let loadedCount = 1; // Hauptpanorama bereits geladen
+                
+                for (const panoramaFile of panoramaFiles) {
+                    // Überspringe das Hauptpanorama, da es bereits geladen wurde
+                    if (panoramaFile === metadata.panorama_file) {
+                        console.log(`⏭️  Überspringe Hauptpanorama: ${panoramaFile}`);
+                        continue;
+                    }
+                    
+                    const panoramaUrl = isLocalDevelopment ? 
+                        `./output/${panoramaFile}` : 
+                        `${window.location.origin}/output/${panoramaFile}`;
+                    
+                    // Prüfe ob Panorama existiert
+                    console.log(`🔍 Prüfe Panorama: ${panoramaUrl}`);
+                    const panoramaResponse = await fetch(panoramaUrl);
+                    if (panoramaResponse.ok) {
+                        console.log(`✅ Panorama gefunden: ${panoramaFile}`);
+                        
+                        const panoramaName = panoramaFile.replace('.jpg', '');
+                        const depthMapFile = `depth_map_${panoramaName}.png`;
+                        const depthMapUrl = isLocalDevelopment ? 
+                            `./output/${depthMapFile}` : 
+                            `${window.location.origin}/output/${depthMapFile}`;
+                        
+                        // Prüfe ob Depth Map existiert
+                        console.log(`🔍 Prüfe Depth Map: ${depthMapUrl}`);
+                        const depthMapResponse = await fetch(depthMapUrl);
+                        if (depthMapResponse.ok) {
+                            console.log(`✅ Depth Map gefunden: ${depthMapFile}`);
+                            console.log(`🎯 Lade zusätzliches Panorama: ${panoramaFile}`);
+                            
+                            try {
+                                const panoramaBlob = await panoramaResponse.blob();
+                                const depthMapBlob = await depthMapResponse.blob();
+                                const imageUrl = URL.createObjectURL(panoramaBlob);
+                                const depthMapBlobUrl = URL.createObjectURL(depthMapBlob);
+                                
+                                // Erstelle Metadaten für dieses Panorama
+                                const additionalMetadata = {
+                                    panorama_file: panoramaFile,
+                                    additional_files: [{
+                                        filename: depthMapFile,
+                                        type: 'depth_map'
+                                    }],
+                                    gps_coordinates: metadata.gps_coordinates, // Verwende GPS vom Hauptpanorama
+                                    created_at: new Date().toISOString(),
+                                    image_width: 1750, // Beispiel-Werte
+                                    image_height: 471
+                                };
+                                
+                                await createPanoramaSphereFromDepthMap(imageUrl, depthMapBlobUrl, additionalMetadata);
+                                loadedCount++;
+                                
+                            } catch (error) {
+                                console.error(`⚠️  Fehler beim Laden von ${panoramaFile}:`, error);
+                            }
+                        } else {
+                            console.warn(`⚠️  Depth Map nicht gefunden: ${depthMapFile} (Status: ${depthMapResponse.status})`);
+                        }
+                    } else {
+                        console.warn(`⚠️  Panorama nicht gefunden: ${panoramaFile} (Status: ${panoramaResponse.status})`);
+                    }
+                }
+                
+                showStatus(`${loadedCount} Panoramen erfolgreich geladen!`, "success");
+                
+            } catch (error) {
+                console.error("❌ Fehler beim Laden aller Panoramen:", error);
+                showStatus(`Fehler: ${error.message}`, "error");
+            }
+        }
+
+        // Ersetze die alte autoLoadPanoramas Funktion
+        async function autoLoadPanoramas() {
+            try {
+                console.log("🔄 Lade alle verfügbaren Panoramen...");
+                await loadAllAvailablePanoramas();
+            } catch (error) {
+                console.log("ℹ️  Keine Panoramen verfügbar:", error.message);
+            }
+        }
+        
+        // ===== INITIALISIERUNG =====
+        camera.position.set(10, 10, 10);
+        controls.update();
+        
+        // GPS starten
+        getUserLocation();
+        
+        // Automatisch Panoramen vom Server laden
+        autoLoadPanoramas();
+        
+        // Starte Animation
+        animate();
+        
+        // Zeige Status
+        showStatus('App bereit! GPS wird initialisiert...', 'info');
+        
+        console.log('✅ Schritt 3: Panorama-Integration für Handy-Workflow geladen');
+
+        // Debug-Funktion hinzufügen
+        async function debugServerConnection() {
+            const serverUrl = window.location.origin;
+            console.log("🔍 Debug Server-Verbindung...");
+            console.log("📍 Server URL:", serverUrl);
+            
+            try {
+                const metadataUrl = `${serverUrl}/output/panorama_metadata.json`;
+                console.log("🔍 Teste Metadaten-URL:", metadataUrl);
+                
+                const response = await fetch(metadataUrl);
+                console.log("✅ Response Status:", response.status);
+                
+                if (response.ok) {
+                    const metadata = await response.json();
+                    console.log("📄 Metadaten:", metadata);
+                }
+            } catch (error) {
+                console.error("❌ Debug-Fehler:", error);
+            }
+        }
+
+        // Debug beim Laden ausführen
+        debugServerConnection();
+
+        // Erweiterte Orbit Controls für Sphäre-Navigation
+        function setupEnhancedOrbitControls() {
+            // Bestehende Controls erweitern
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = false;
+            
+            // Zoom-Limits für Sphäre
+            controls.minDistance = 0.1;  // Kann in die Sphäre hineinzoomen
+            controls.maxDistance = 100;  // Kann weit herauszoomen
+            
+            // Rotation-Limits
+            controls.minPolarAngle = 0;   // Vollständige vertikale Rotation
+            controls.maxPolarAngle = Math.PI;
+            
+            // Automatische Rotation deaktivieren (Sphäre dreht sich nicht von selbst)
+            controls.autoRotate = false;
+            controls.autoRotateSpeed = 0;
+            
+            // Smooth Zoom für bessere Navigation
+            controls.enableZoom = true;
+            controls.zoomSpeed = 1.0;
+            
+            // Panning für Navigation innerhalb der Sphäre
+            controls.enablePan = true;
+            controls.panSpeed = 1.0;
+            
+            console.log("🎮 Erweiterte Orbit Controls für 360° Sphäre aktiviert");
+        }
+
+        // In der Initialisierung
+        function init() {
+            // ... bestehender Code ...
+            
+            // Erweiterte Controls aktivieren
+            setupEnhancedOrbitControls();
+            
+            // Automatisch Panoramen vom Server laden
+            autoLoadPanoramas();
+            
+            // ... restlicher Code ...
+        }
+
+        // Video-Aufnahme Funktionen
+        async function initVideoRecording() {
+            try {
+                showStatus("Initialisiere Video-Aufnahme...", "processing");
+                
+                const videoPreview = document.getElementById('video-preview');
+                if (!videoPreview) {
+                    throw new Error("Video-Element nicht gefunden");
+                }
+                
+                // Prüfe HTTPS auf Mobilgeräten
+                if (window.location.protocol !== 'https:' && !window.location.hostname.includes('localhost')) {
+                    throw new Error("HTTPS erforderlich für Video-Aufnahme auf Mobilgeräten");
+                }
+                
+                // Prüfe Browser-Unterstützung
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error("Video-Aufnahme wird von diesem Browser nicht unterstützt");
+                }
+                
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1280, max: 1920 },
+                        height: { ideal: 720, max: 1080 },
+                        facingMode: 'environment',
+                        frameRate: { ideal: 30, max: 60 }
+                    },
+                    audio: false
+                });
+                
+                videoStream = stream;
+                videoPreview.srcObject = stream;
+                
+                const videoUI = document.getElementById('video-recording-ui');
+                if (videoUI) {
+                    videoUI.style.display = 'block';
+                }
+                
+                showStatus("Video-Aufnahme bereit!", "success");
+                
+            } catch (error) {
+                console.error("Video-Aufnahme Fehler:", error);
+                let errorMessage = error.message;
+                
+                // Benutzerfreundliche Fehlermeldungen
+                if (error.name === 'NotAllowedError') {
+                    errorMessage = "Kamera-Zugriff verweigert. Bitte erlauben Sie den Zugriff auf die Kamera.";
+                } else if (error.name === 'NotFoundError') {
+                    errorMessage = "Keine Kamera gefunden. Bitte prüfen Sie, ob eine Kamera verfügbar ist.";
+                } else if (error.name === 'NotSupportedError') {
+                    errorMessage = "Video-Aufnahme wird von diesem Gerät nicht unterstützt.";
+                } else if (error.name === 'NotReadableError') {
+                    errorMessage = "Kamera wird bereits von einer anderen Anwendung verwendet.";
+                }
+                
+                showStatus(`Video-Aufnahme Fehler: ${errorMessage}`, "error");
+            }
+        }
+
+        function startVideoRecording() {
+            if (!videoStream) {
+                showStatus("Kein Video-Stream verfügbar. Bitte initialisieren Sie die Aufnahme zuerst.", "error");
+                return;
+            }
+            
+            try {
+                recordedChunks = [];
+                
+                // Unterstützte Codecs für Mobilgeräte prüfen
+                const supportedTypes = [
+                    'video/webm;codecs=vp9',
+                    'video/webm;codecs=vp8',
+                    'video/webm',
+                    'video/mp4',
+                    'video/ogg;codecs=theora'
+                ];
+                
+                let selectedType = null;
+                for (const type of supportedTypes) {
+                    if (MediaRecorder.isTypeSupported(type)) {
+                        selectedType = type;
+                        console.log("Verwende Codec:", type);
+                        break;
+                    }
+                }
+                
+                if (!selectedType) {
+                    throw new Error("Kein unterstützter Video-Codec gefunden");
+                }
+                
+                mediaRecorder = new MediaRecorder(videoStream, {
+                    mimeType: selectedType
+                });
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: selectedType });
+                    console.log("Video aufgenommen:", blob.size, "bytes");
+                    showStatus("Video aufgenommen! Bereit zum Upload.", "success");
+                    prepareVideoForUpload(blob);
+                };
+                
+                mediaRecorder.onerror = (event) => {
+                    console.error("MediaRecorder Fehler:", event.error);
+                    showStatus(`Aufnahme-Fehler: ${event.error.message}`, "error");
+                };
+                
+                // Aufnahme mit kleineren Chunks für bessere Kompatibilität
+                mediaRecorder.start(1000); // 1 Sekunde Chunks
+                isRecording = true;
+                recordingStartTime = Date.now();
+                
+                document.getElementById('start-recording-btn').disabled = true;
+                document.getElementById('stop-recording-btn').disabled = false;
+                document.getElementById('recording-status').textContent = "AUFNAHME LÄUFT...";
+                
+                showStatus("Video-Aufnahme gestartet...", "processing");
+                
+            } catch (error) {
+                console.error("Aufnahme-Fehler:", error);
+                showStatus(`Aufnahme fehlgeschlagen: ${error.message}`, "error");
+            }
+        }
+
+        function stopVideoRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                
+                const duration = Date.now() - recordingStartTime;
+                console.log("Aufnahme gestoppt. Dauer:", duration, "ms");
+                
+                document.getElementById('start-recording-btn').disabled = false;
+                document.getElementById('stop-recording-btn').disabled = true;
+                document.getElementById('recording-status').textContent = "AUFNAHME BEENDET";
+            }
+        }
+
+        function cancelVideoRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+            }
+            
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            
+            document.getElementById('video-recording-ui').style.display = 'none';
+            showStatus("Video-Aufnahme abgebrochen", "info");
+        }
+
+        // Neue Funktion: Video Recording UI schließen
+        function closeVideoRecordingUI() {
+            const videoUI = document.getElementById('video-recording-ui');
+            if (videoUI) {
+                videoUI.style.display = 'none';
+            }
+            
+            // Video Stream stoppen falls noch aktiv
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            
+            // Recording Status zurücksetzen
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+            }
+            
+            // UI-Elemente zurücksetzen
+            const startBtn = document.getElementById('start-recording-btn');
+            const stopBtn = document.getElementById('stop-recording-btn');
+            const statusEl = document.getElementById('recording-status');
+            
+            if (startBtn) startBtn.disabled = false;
+            if (stopBtn) stopBtn.disabled = true;
+            if (statusEl) statusEl.textContent = "BEREIT ZUR AUFNAHME";
+            
+            console.log("Video Recording UI geschlossen");
+        }
+
+        // Globale Variable für das aktuelle Upload-Session
+        let currentUploadSession = null;
+
+        // Fehlende globale Variable für Status-Polling
+        let statusPollingInterval = null;
+
+        async function prepareVideoForUpload(videoBlob) {
+            try {
+                const gpsPosition = await getCurrentGPSPosition();
+                
+                // Eindeutige Session-ID für diesen Upload erstellen
+                currentUploadSession = {
+                    id: Date.now().toString(),
+                    uploadTime: new Date(),
+                    gpsPosition: gpsPosition
+                };
+                
+                const formData = new FormData();
+                formData.append('video', videoBlob, 'recorded_video.webm');
+                formData.append('gps_lat', gpsPosition.lat);
+                formData.append('gps_lon', gpsPosition.lon);
+                formData.append('session_id', currentUploadSession.id); // Session-ID mitsenden
+                
+                showStatus("Lade Video hoch...", "processing");
+                
+                const response = await fetch(`${FLASK_API_URL}/upload-video`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Upload fehlgeschlagen: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log("Upload erfolgreich:", result);
+                
+                showStatus("Video hochgeladen! Panorama wird erstellt...", "success");
+                startPanoramaStatusPolling();
+                
+            } catch (error) {
+                console.error("Upload-Fehler:", error);
+                showStatus(`Upload fehlgeschlagen: ${error.message}`, "error");
+            }
+        }
+
+        function startPanoramaStatusPolling() {
+            if (statusPollingInterval) {
+                clearInterval(statusPollingInterval);
+            }
+            
+            let retryCount = 0;
+            const maxRetries = 100; // Erhöht von 30 auf 60 (3 Minuten)
+            const uploadStartTime = new Date();
+            
+            statusPollingInterval = setInterval(async () => {
+                try {
+                    retryCount++;
+                    console.log(`Status-Check ${retryCount}/${maxRetries}`);
+                    
+                    // Direkt die Metadaten-Datei prüfen statt Server-Status
+                    const isLocalDevelopment = window.location.protocol === 'file:';
+                    let metadataUrl = isLocalDevelopment ? 
+                        './output/panorama_metadata.json' : 
+                        `${window.location.origin}/output/panorama_metadata.json`;
+                    
+                    const metadataResponse = await fetch(metadataUrl);
+                    
+                    if (metadataResponse.ok) {
+                        const metadata = await metadataResponse.json();
+                        
+                        // Prüfe ob das Panorama nach unserem Upload erstellt wurde
+                        const panoramaTime = new Date(metadata.created_at);
+                        const timeDiff = panoramaTime - uploadStartTime;
+                        const minutesDiff = timeDiff / (1000 * 60);
+                        
+                        console.log("🕐 Panorama erstellt nach Upload:", minutesDiff.toFixed(1), "Minuten");
+                        
+                        // Wenn das Panorama nach unserem Upload erstellt wurde
+                        if (timeDiff > 0 && minutesDiff < 15) { // Erhöht von 10 auf 15 Minuten
+                            clearInterval(statusPollingInterval);
+                            statusPollingInterval = null;
+                            
+                            console.log("✅ Neues Panorama gefunden:", metadata);
+                            showStatus("Neues Panorama gefunden! Lade in Map...", "success");
+                            
+                            closeVideoRecordingUI();
+                            
+                            // Lade das neue Panorama
+                            await loadSpecificPanorama(metadata);
+                            
+                        } else if (timeDiff < 0) {
+                            // Panorama ist älter als unser Upload
+                            showStatus(`Warte auf neues Panorama... (${retryCount}/${maxRetries})`, "processing");
+                        } else {
+                            // Panorama ist zu neu (möglicherweise noch in Bearbeitung)
+                            showStatus(`Panorama wird erstellt... (${retryCount}/${maxRetries})`, "processing");
+                        }
+                    } else {
+                        // Keine Metadaten-Datei gefunden
+                        showStatus(`Warte auf Panorama... (${retryCount}/${maxRetries})`, "processing");
+                    }
+                    
+                    if (retryCount >= maxRetries) {
+                        clearInterval(statusPollingInterval);
+                        statusPollingInterval = null;
+                        showStatus("Panorama-Erstellung dauert zu lange. Versuche es später.", "error");
+                    }
+                    
+                } catch (error) {
+                    console.error("Status-Polling Fehler:", error);
+                    retryCount++;
+                    
+                    if (retryCount >= maxRetries) {
+                        clearInterval(statusPollingInterval);
+                        statusPollingInterval = null;
+                        showStatus("Verbindungsfehler. Versuche es später.", "error");
+                    }
+                }
+            }, 5000); // Erhöht von 3000 auf 5000ms (5 Sekunden zwischen Checks)
+        }
+
+        // Vereinfachte loadSpecificPanorama Funktion (ohne strenge Validierung)
+        async function loadSpecificPanorama(metadata) {
+            try {
+                showStatus("Lade neues Panorama...", "processing");
+                
+                console.log("🎯 Lade neues Panorama:", metadata);
+                
+                const isLocalDevelopment = window.location.protocol === 'file:';
+                
+                const depthMapFile = metadata.additional_files?.find(file => file.type === 'depth_map');
+                if (!depthMapFile) {
+                    throw new Error('Keine Depth Map gefunden. Verwende Standard-Point Cloud.');
+                }
+                
+                const panoramaUrl = isLocalDevelopment ? 
+                    `./output/${metadata.panorama_file}` : 
+                    `${window.location.origin}/output/${metadata.panorama_file}`;
+                    
+                const depthMapFileUrl = isLocalDevelopment ? 
+                    `./output/${depthMapFile.filename}` : 
+                    `${window.location.origin}/output/${depthMapFile.filename}`;
+                
+                const [panoramaResponse, depthMapResponse] = await Promise.all([
+                    fetch(panoramaUrl),
+                    fetch(depthMapFileUrl)
+                ]);
+                
+                if (!panoramaResponse.ok) {
+                    throw new Error(`Panorama-Datei nicht gefunden: ${metadata.panorama_file}`);
+                }
+                
+                if (!depthMapResponse.ok) {
+                    throw new Error(`Depth Map nicht gefunden: ${depthMapFile.filename}`);
+                }
+                
+                showStatus("Erstelle 360° Panorama-Sphäre mit Depth Map...", "processing");
+                
+                const panoramaBlob = await panoramaResponse.blob();
+                const depthMapBlob = await depthMapResponse.blob();
+                const imageUrl = URL.createObjectURL(panoramaBlob);
+                const depthMapBlobUrl = URL.createObjectURL(depthMapBlob);
+                
+                await createPanoramaSphereFromDepthMap(imageUrl, depthMapBlobUrl, metadata);
+                
+                showStatus(`Neues 360° Panorama geladen! (${metadata.image_width}x${metadata.image_height})`, "success");
+                
+                // Session zurücksetzen
+                currentUploadSession = null;
+                
+            } catch (error) {
+                console.error("❌ Fehler beim Laden des Panoramas:", error);
+                showStatus(`Fehler: ${error.message}`, "error");
+            }
+        }
+
+        // Fehlende Funktion: Aktuelle GPS-Position abrufen
+        async function getCurrentGPSPosition() {
+            return new Promise((resolve, reject) => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            resolve({
+                                lat: position.coords.latitude,
+                                lon: position.coords.longitude,
+                                accuracy: position.coords.accuracy
+                            });
+                        },
+                        (error) => {
+                            console.warn("GPS nicht verfügbar:", error);
+                            // Fallback auf Berlin-Koordinaten
+                            resolve({
+                                lat: 52.52,
+                                lon: 13.405,
+                                accuracy: 10000
+                            });
+                        },
+                        { 
+                            timeout: 15000,
+                            enableHighAccuracy: false,
+                            maximumAge: 30000
+                        }
+                    );
+                } else {
+                    reject(new Error("Geolocation nicht unterstützt"));
+                }
+            });
+        }
+
+        // Event Listeners für neue Buttons
+        document.getElementById('record-video-btn').addEventListener('click', initVideoRecording);
+        document.getElementById('start-recording-btn').addEventListener('click', startVideoRecording);
+        document.getElementById('stop-recording-btn').addEventListener('click', stopVideoRecording);
+        document.getElementById('cancel-recording-btn').addEventListener('click', cancelVideoRecording);
+        document.getElementById('upload-video-btn').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'video/*';
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    await prepareVideoForUpload(file);
+                }
+            };
+            input.click();
+        });
+
+        // Neuer Event Listener für alle Panoramen
+        document.getElementById('load-all-panoramas-btn').addEventListener('click', loadAllAvailablePanoramas);
+
+        // Debug-Funktion für Browser-Capabilities
+        function logBrowserCapabilities() {
+            console.log("=== Browser Capabilities ===");
+            console.log("User Agent:", navigator.userAgent);
+            console.log("HTTPS:", window.location.protocol === 'https:');
+            console.log("MediaDevices:", !!navigator.mediaDevices);
+            console.log("getUserMedia:", !!navigator.mediaDevices?.getUserMedia);
+            console.log("MediaRecorder:", !!window.MediaRecorder);
+            
+            if (window.MediaRecorder) {
+                const codecs = [
+                    'video/webm;codecs=vp9',
+                    'video/webm;codecs=vp8',
+                    'video/webm',
+                    'video/mp4',
+                    'video/ogg;codecs=theora'
+                ];
+                
+                codecs.forEach(codec => {
+                    console.log(`${codec}:`, MediaRecorder.isTypeSupported(codec));
+                });
+            }
+        }
+        
+        // Beim Laden ausführen
+        document.addEventListener('DOMContentLoaded', logBrowserCapabilities);
+    </script>
+</body>
+</html> 

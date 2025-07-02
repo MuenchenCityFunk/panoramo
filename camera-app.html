@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Point Cloud Generator</title>
+    <style>
+        body { 
+            margin: 0; 
+            padding: 10px;
+            background: linear-gradient(135deg, #000000 0%, #000000 100%);
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 100%;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 1.8em;
+        }
+        
+        .content {
+            padding: 20px;
+        }
+        
+        .step {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+        }
+        
+        .step h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .camera-container {
+            position: relative;
+            width: 100%;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            margin-bottom: 15px;
+        }
+        
+        #video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        
+        #canvas {
+            display: none;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+            width: 100%;
+            max-width: 200px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .camera-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status.processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .preview-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 15px 0;
+        }
+        
+        .preview {
+            text-align: center;
+        }
+        
+        .preview img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .preview h4 {
+            margin: 8px 0;
+            color: #333;
+        }
+        
+        .controls {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .control-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        #pointCloudContainer {
+            height: 300px;
+            background: #000;
+            border-radius: 10px;
+            position: relative;
+            margin: 15px 0;
+        }
+        
+        #pointCloudInfo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 8px;
+            border-radius: 5px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📸 Point Cloud Generator</h1>
+        </div>
+        
+        <div class="content">
+            <!-- Schritt 1: Kamera -->
+            <div class="step" id="step1">
+                <h3>Foto aufnehmen</h3>
+                <div class="camera-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas"></canvas>
+                </div>
+                <div class="camera-controls">
+                    <button class="btn btn-primary" id="startCamera">Kamera starten</button>
+                    <button class="btn btn-success" id="capturePhoto" disabled>Foto aufnehmen</button>
+                    <button class="btn btn-secondary" id="retakePhoto" style="display: none;">Erneut aufnehmen</button>
+                </div>
+            </div>
+            
+            <!-- Status -->
+            <div id="status" class="status info hidden"></div>
+            
+            <!-- Schritt 2: Vorschau -->
+            <div class="step hidden" id="step2">
+                <h3>Foto Vorschau</h3>
+                <div class="preview-container">
+                    <div class="preview">
+                        <h4>Original Foto</h4>
+                        <img id="originalPreview" alt="Original Foto">
+                    </div>
+                    <div class="preview">
+                        <h4>Depth Map</h4>
+                        <img id="depthPreview" alt="Depth Map">
+                    </div>
+                </div>
+                <div class="camera-controls">
+                    <button class="btn btn-primary" id="generatePointCloud">Point Cloud generieren</button>
+                    <button class="btn btn-secondary" id="backToCamera">Zurück zur Kamera</button>
+                </div>
+            </div>
+            
+            <!-- Schritt 3: Point Cloud -->
+            <div class="step hidden" id="step3">
+                <h3>Point Cloud Viewer</h3>
+                <div id="pointCloudContainer">
+                    <div id="pointCloudInfo"></div>
+                </div>
+                
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="pointSize">Punktgröße:</label>
+                        <input type="range" id="pointSize" min="0.001" max="0.1" step="0.001" value="0.01">
+                    </div>
+                    <div class="control-group">
+                        <label for="downsampleFactor">Downsample:</label>
+                        <input type="range" id="downsampleFactor" min="1" max="100" step="1" value="25">
+                    </div>
+                    <div class="control-group">
+                        <label for="qualityMode">Qualitätsmodus:</label>
+                        <select id="qualityMode">
+                            <option value="low">Niedrig (schnell)</option>
+                            <option value="medium" selected>Mittel (ausgewogen)</option>
+                            <option value="high">Hoch (langsam)</option>
+                            <option value="ultra">Ultra (sehr langsam)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="camera-controls">
+                    <button class="btn btn-success" id="downloadPointCloud">Herunterladen</button>
+                    <button class="btn btn-primary" id="newPhoto">Neues Foto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <script>
+        // Globale Variablen
+        let stream = null;
+        let audioStream = null;
+        let audioContext = null;
+        let analyser = null;
+        let microphone = null;
+        let capturedImageData = null;
+        let pointCloudData = null;
+        let threeScene = null;
+        let threeCamera = null;
+        let threeRenderer = null;
+        let threeControls = null;
+        let currentPoints = null;
+        let capturedDbLevel = 0; // Neue Variable für gemessene Lautstärke
+
+        // DOM Elemente
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startCameraBtn = document.getElementById('startCamera');
+        const capturePhotoBtn = document.getElementById('capturePhoto');
+        const retakePhotoBtn = document.getElementById('retakePhoto');
+        const generatePointCloudBtn = document.getElementById('generatePointCloud');
+        const backToCameraBtn = document.getElementById('backToCamera');
+        const downloadPointCloudBtn = document.getElementById('downloadPointCloud');
+        const newPhotoBtn = document.getElementById('newPhoto');
+        const statusDiv = document.getElementById('status');
+
+        // Kamera-Debugging
+        async function startCamera() {
+            try {
+                console.log('🟡 Starting camera...');
+                
+                // Kamera starten
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+                
+                // Mikrofon starten
+                const micSuccess = await initMicrophone();
+                
+                console.log('🟢 Camera started successfully');
+                console.log('📐 Video dimensions:', video.videoWidth, 'x', video.videoHeight);
+                
+                video.srcObject = stream;
+                await video.play();
+                
+                capturePhotoBtn.disabled = false;
+                showStatus('Kamera bereit!', 'info');
+                
+                // Lautstärke-Monitoring starten
+                if (micSuccess) {
+                    startVolumeMonitoring();
+                }
+                
+            } catch (error) {
+                console.error('🔴 Camera error:', error);
+                showStatus('Kamera Fehler: ' + error.message, 'error');
+            }
+        }
+
+        // Lautstärke-Monitoring
+        function startVolumeMonitoring() {
+            const volumeDisplay = document.createElement('div');
+            volumeDisplay.id = 'volumeDisplay';
+            volumeDisplay.style.cssText = `
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: rgba(0,0,0,0.7);
+                color: white;
+                padding: 8px;
+                border-radius: 5px;
+                font-size: 0.9em;
+                z-index: 1000;
+            `;
+            document.querySelector('.camera-container').appendChild(volumeDisplay);
+            
+            function updateVolume() {
+                const volume = measureVolume();
+                const db = Math.round(volume * 100);
+                volumeDisplay.textContent = `Lautstärke: ${db}%`;
+                
+                // Farbe basierend auf Lautstärke
+                if (volume > 0.7) {
+                    volumeDisplay.style.background = 'rgba(255,0,0,0.8)';
+                } else if (volume > 0.4) {
+                    volumeDisplay.style.background = 'rgba(255,165,0,0.8)';
+                } else {
+                    volumeDisplay.style.background = 'rgba(0,0,0,0.7)';
+                }
+            }
+            
+            // Alle 100ms aktualisieren
+            const volumeInterval = setInterval(updateVolume, 100);
+            
+            // Interval stoppen wenn Foto aufgenommen wird
+            window.stopVolumeMonitoring = () => {
+                clearInterval(volumeInterval);
+                if (volumeDisplay) volumeDisplay.remove();
+            };
+        }
+
+        // Foto aufnehmen
+        function capturePhoto() {
+            // Lautstärke beim Aufnehmen speichern
+            capturedDbLevel = measureVolume();
+            console.log('📸 Captured volume level:', capturedDbLevel);
+            
+            // Lautstärke-Monitoring stoppen
+            if (window.stopVolumeMonitoring) {
+                window.stopVolumeMonitoring();
+            }
+            
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            
+            capturedImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // Kamera und Mikrofon stoppen
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            if (audioStream) {
+                audioStream.getTracks().forEach(track => track.stop());
+                audioStream = null;
+            }
+            
+            showPhotoPreview();
+            showStep(2);
+        }
+
+        // Foto Vorschau anzeigen
+        function showPhotoPreview() {
+            const originalPreview = document.getElementById('originalPreview');
+            originalPreview.src = canvas.toDataURL('image/jpeg', 0.8);
+            
+            const depthMap = generateDepthMap(capturedImageData);
+            const depthPreview = document.getElementById('depthPreview');
+            depthPreview.src = depthMap;
+        }
+
+        // Depth Map generieren
+        function generateDepthMap(imageData) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = imageData.width;
+            canvas.height = imageData.height;
+            
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = imageData.width;
+            tempCanvas.height = imageData.height;
+            
+            const tempImageData = new ImageData(
+                new Uint8ClampedArray(imageData.data),
+                imageData.width,
+                imageData.height
+            );
+            tempCtx.putImageData(tempImageData, 0, 0);
+            ctx.drawImage(tempCanvas, 0, 0);
+            
+            const imageDataGray = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageDataGray.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                data[i] = gray;
+                data[i + 1] = gray;
+                data[i + 2] = gray;
+            }
+            
+            ctx.putImageData(imageDataGray, 0, 0);
+            return canvas.toDataURL('image/png');
+        }
+
+        // Point Cloud Debugging
+        function generatePointCloud() {
+            const startTime = Date.now();
+            console.log('🟡 Starting Point Cloud generation...');
+            
+            if (!capturedImageData) {
+                console.error('🔴 No image data available!');
+                showStatus('Kein Foto verfügbar!', 'error');
+                return;
+            }
+
+            showStatus('Point Cloud wird generiert...', 'processing');
+            
+            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const originalPixels = capturedImageData.width * capturedImageData.height;
+            let defaultDownsample;
+
+            if (originalPixels > 4000000) defaultDownsample = 40;      // 4MP+ -> 40x
+            else if (originalPixels > 2000000) defaultDownsample = 30; // 2MP+ -> 30x  
+            else if (originalPixels > 1000000) defaultDownsample = 20; // 1MP+ -> 20x
+            else defaultDownsample = 10;                                // <1MP -> 10x
+            
+            const downsampleFactor = parseInt(document.getElementById('downsampleFactor').value) || defaultDownsample;
+            
+            console.log('📊 Downsample factor:', downsampleFactor);
+            console.log('📱 Is mobile:', isMobile);
+            
+            const downsampledImage = downsampleImageData(capturedImageData, downsampleFactor);
+            const depthMap = generateDepthMapData(downsampledImage);
+            
+            const width = downsampledImage.width;
+            const height = downsampledImage.height;
+            const numPoints = width * height;
+            
+            console.log('📐 Original size:', capturedImageData.width, 'x', capturedImageData.height);
+            console.log('📐 Processed size:', width, 'x', height);
+            console.log('🔢 Total points:', numPoints.toLocaleString());
+            
+            const maxPoints = isMobile ? 100000 : 200000;
+            if (numPoints > maxPoints) {
+                console.error('🔴 Too many points:', numPoints, '>', maxPoints);
+                showStatus(`Zu viele Punkte (${numPoints.toLocaleString()})! Erhöhen Sie Downsample.`, 'error');
+                return;
+            }
+            
+            const positions = new Float32Array(numPoints * 3);
+            const colors = new Float32Array(numPoints * 3);
+            
+            let pointIndex = 0;
+            
+            // Progress-Update alle 1000 Punkte
+            const progressInterval = Math.max(1, Math.floor(numPoints / 10));
+            
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const pixelIndex = (y * width + x) * 4;
+                    
+                    const u = (x / width) - 0.5;
+                    const v = (y / height) - 0.5;
+                    
+                    const r = downsampledImage.data[pixelIndex] / 255;
+                    const g = downsampledImage.data[pixelIndex + 1] / 255;
+                    const b = downsampledImage.data[pixelIndex + 2] / 255;
+                    
+                    const depth = depthMap[pixelIndex] / 255;
+                    
+                    positions[pointIndex * 3] = u;
+                    positions[pointIndex * 3 + 1] = -v;
+                    positions[pointIndex * 3 + 2] = depth * capturedDbLevel * 2;
+                    
+                    colors[pointIndex * 3] = r;
+                    colors[pointIndex * 3 + 1] = g;
+                    colors[pointIndex * 3 + 2] = b;
+                    
+                    pointIndex++;
+                    
+                    // Progress-Update
+                    if (pointIndex % progressInterval === 0) {
+                        const progress = Math.round((pointIndex / numPoints) * 100);
+                        showStatus(`Generierung: ${progress}%`, 'processing');
+                    }
+                }
+            }
+            
+            pointCloudData = {
+                positions: positions,
+                colors: colors,
+                count: numPoints,
+                metadata: {
+                    originalWidth: capturedImageData.width,
+                    originalHeight: capturedImageData.height,
+                    processedWidth: width,
+                    processedHeight: height,
+                    downsampleFactor: downsampleFactor,
+                    depthIntensity: capturedDbLevel * 2,
+                    capturedVolume: capturedDbLevel,
+                    generatedAt: new Date().toISOString()
+                }
+            };
+            
+            initThreeJS();
+            displayPointCloud();
+            
+            const endTime = Date.now();
+            console.log('🟢 Point Cloud generation completed in:', endTime - startTime, 'ms');
+            console.log('✅ Points generated:', numPoints.toLocaleString());
+            showStatus(`${numPoints.toLocaleString()} Punkte generiert!`, 'success');
+            showStep(3);
+        }
+
+        // Depth Map Daten generieren
+        function generateDepthMapData(imageData) {
+            const data = new Uint8ClampedArray(imageData.data);
+            
+            for (let i = 0; i < data.length; i += 4) {
+                const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+                data[i] = gray;
+                data[i + 1] = gray;
+                data[i + 2] = gray;
+            }
+            
+            return data;
+        }
+
+        // Downsample Image Data
+        function downsampleImageData(imageData, factor) {
+            const originalWidth = imageData.width;
+            const originalHeight = imageData.height;
+            const newWidth = Math.floor(originalWidth / factor);
+            const newHeight = Math.floor(originalHeight / factor);
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = originalWidth;
+            tempCanvas.height = originalHeight;
+            
+            const tempImageData = new ImageData(
+                new Uint8ClampedArray(imageData.data),
+                originalWidth,
+                originalHeight
+            );
+            tempCtx.putImageData(tempImageData, 0, 0);
+            ctx.drawImage(tempCanvas, 0, 0, newWidth, newHeight);
+            
+            return ctx.getImageData(0, 0, newWidth, newHeight);
+        }
+
+        // Three.js initialisieren
+        function initThreeJS() {
+            const container = document.getElementById('pointCloudContainer');
+            
+            threeScene = new THREE.Scene();
+            threeCamera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            threeRenderer = new THREE.WebGLRenderer({ antialias: true });
+            threeRenderer.setSize(container.clientWidth, container.clientHeight);
+            threeRenderer.setClearColor(0x000000);
+            
+            container.innerHTML = '';
+            container.appendChild(threeRenderer.domElement);
+            
+            // Recreate the info div after clearing the container
+            const infoDiv = document.createElement('div');
+            infoDiv.id = 'pointCloudInfo';
+            infoDiv.style.cssText = `
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                color: white;
+                background: rgba(0,0,0,0.7);
+                padding: 8px;
+                border-radius: 5px;
+                font-size: 0.9em;
+                z-index: 1000;
+            `;
+            container.appendChild(infoDiv);
+            
+            threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
+            threeCamera.position.set(0, 0, 5);
+            threeControls.update();
+            
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            threeScene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(1, 1, 1);
+            threeScene.add(directionalLight);
+            
+            function animate() {
+                requestAnimationFrame(animate);
+                threeControls.update();
+                threeRenderer.render(threeScene, threeCamera);
+            }
+            animate();
+            
+            const resizeObserver = new ResizeObserver(() => {
+                threeCamera.aspect = container.clientWidth / container.clientHeight;
+                threeCamera.updateProjectionMatrix();
+                threeRenderer.setSize(container.clientWidth, container.clientHeight);
+            });
+            resizeObserver.observe(container);
+        }
+
+        // Point Cloud anzeigen
+        function displayPointCloud() {
+            if (!pointCloudData || !threeScene) return;
+            
+            if (currentPoints) {
+                threeScene.remove(currentPoints);
+                currentPoints.geometry.dispose();
+                currentPoints.material.dispose();
+            }
+            
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(pointCloudData.positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(pointCloudData.colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: parseFloat(document.getElementById('pointSize').value),
+                vertexColors: true,
+                sizeAttenuation: true
+            });
+            
+            currentPoints = new THREE.Points(geometry, material);
+            threeScene.add(currentPoints);
+            
+            const box = new THREE.Box3().setFromObject(currentPoints);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fov = threeCamera.fov * (Math.PI / 180);
+            let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+            
+            threeCamera.position.set(center.x, center.y, center.z + cameraZ * 1.5);
+            threeControls.target.copy(center);
+            threeControls.update();
+            
+            const infoDiv = document.getElementById('pointCloudInfo');
+            infoDiv.textContent = `${pointCloudData.count.toLocaleString()} Punkte`;
+        }
+
+        // Point Cloud herunterladen
+        function downloadPointCloud() {
+            if (!pointCloudData) {
+                showStatus('Keine Point Cloud verfügbar!', 'error');
+                return;
+            }
+            
+            const exportData = {
+                positions: Array.from(pointCloudData.positions),
+                colors: Array.from(pointCloudData.colors),
+                count: pointCloudData.count,
+                metadata: pointCloudData.metadata
+            };
+            
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `pointcloud_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.json`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+            
+            showStatus('Point Cloud heruntergeladen!', 'success');
+        }
+
+        // Hilfsfunktionen
+        function showStatus(message, type) {
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.classList.remove('hidden');
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.classList.add('hidden');
+                }, 3000);
+            }
+        }
+
+        function showStep(stepNumber) {
+            document.querySelectorAll('.step').forEach(step => {
+                step.classList.add('hidden');
+            });
+            document.getElementById(`step${stepNumber}`).classList.remove('hidden');
+        }
+
+        function resetApp() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            capturedImageData = null;
+            pointCloudData = null;
+            
+            capturePhotoBtn.disabled = true;
+            retakePhotoBtn.style.display = 'none';
+            showStep(1);
+            showStatus('App zurückgesetzt.', 'info');
+        }
+
+        // Event Listeners
+        startCameraBtn.addEventListener('click', startCamera);
+        capturePhotoBtn.addEventListener('click', capturePhoto);
+        retakePhotoBtn.addEventListener('click', resetApp);
+        generatePointCloudBtn.addEventListener('click', generatePointCloud);
+        backToCameraBtn.addEventListener('click', resetApp);
+        downloadPointCloudBtn.addEventListener('click', downloadPointCloud);
+        newPhotoBtn.addEventListener('click', resetApp);
+
+        document.getElementById('pointSize').addEventListener('input', (e) => {
+            if (currentPoints && currentPoints.material) {
+                currentPoints.material.size = parseFloat(e.target.value);
+            }
+        });
+
+        // Touch-Events debuggen
+        document.addEventListener('touchstart', (e) => {
+            console.log('🟡 Touch start:', e.touches[0]);
+        });
+
+        document.addEventListener('touchend', (e) => {
+            console.log('🟡 Touch end');
+        });
+
+        // Error-Handler
+        window.addEventListener('error', (e) => {
+            console.error('🔴 Global error:', e.error);
+            console.error('🔴 Error message:', e.message);
+            console.error('🔴 Error file:', e.filename);
+            console.error('🔴 Error line:', e.lineno);
+        });
+
+        showStatus('App bereit!', 'info');
+
+        // Im Console-Tab (F12) eingeben:
+        console.log('Current step:', document.querySelector('.step:not(.hidden)').id);
+        console.log('Generate button:', document.getElementById('generatePointCloud'));
+        console.log('Download button:', document.getElementById('downloadPointCloud'));
+
+        if (pointCloudData) {
+            console.log('Point Cloud verfügbar:', pointCloudData.count, 'Punkte');
+            
+            // Download-Button erstellen
+            const downloadBtn = document.createElement('button');
+            downloadBtn.textContent = '📥 Point Cloud herunterladen';
+            downloadBtn.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #28a745;
+                color: white;
+                border: none;
+                padding: 15px 20px;
+                border-radius: 10px;
+                font-size: 16px;
+                z-index: 9999;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            `;
+            
+            downloadBtn.onclick = function() {
+                const exportData = {
+                    positions: Array.from(pointCloudData.positions),
+                    colors: Array.from(pointCloudData.colors),
+                    count: pointCloudData.count,
+                    metadata: pointCloudData.metadata
+                };
+                
+                const dataStr = JSON.stringify(exportData, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = `pointcloud_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.json`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+                
+                console.log('Download gestartet!');
+            };
+            
+            document.body.appendChild(downloadBtn);
+            console.log('Download-Button erstellt!');
+        } else {
+            console.log('Keine Point Cloud Daten gefunden');
+        }
+
+        // Neue Funktion für Mikrofon-Setup
+        async function initMicrophone() {
+            try {
+                console.log('🎤 Initializing microphone...');
+                audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(audioStream);
+                
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                
+                microphone.connect(analyser);
+                
+                console.log('🎤 Microphone initialized successfully');
+                return true;
+            } catch (error) {
+                console.error('🔴 Microphone error:', error);
+                showStatus('Mikrofon Fehler: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // Funktion zum Messen der Lautstärke
+        function measureVolume() {
+            if (!analyser) return 0;
+            
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+            
+            // Durchschnittliche Lautstärke berechnen
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+            }
+            const average = sum / dataArray.length;
+            
+            // Normalisieren (0-255 zu 0-1)
+            return average / 255;
+        }
+    </script>
+</body>
+</html> 
+
+// //   # Im Projektordner
+// python -m http.server 8080
+
+// # In einem neuen Terminal
+// ngrok http 8080

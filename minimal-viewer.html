@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lou Point Cloud Viewer</title>
+    <style>
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #000; 
+            font-family: Arial, sans-serif;
+        }
+        canvas { 
+            display: block; 
+        }
+        #info { 
+            position: absolute; 
+            top: 10px; 
+            left: 10px; 
+            color: white; 
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #fileInput { 
+            position: absolute; 
+            top: 50px; 
+            left: 10px; 
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .control-group {
+            margin-bottom: 10px;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .control-group input {
+            width: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div id="info">Lou Point Cloud Viewer - Drag & drop JSON file or click to select</div>
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+    
+    <div id="controls">
+        <div class="control-group">
+            <label for="pointSize">Point Size:</label>
+            <input type="range" id="pointSize" min="0.001" max="0.1" step="0.001" value="0.01">
+        </div>
+        <div class="control-group">
+            <label for="backgroundColor">Background:</label>
+            <input type="color" id="backgroundColor" value="#000000">
+        </div>
+        <div class="control-group">
+            <button id="resetCamera">Reset Camera</button>
+        </div>
+        <div class="control-group">
+            <button id="screenshot">Take Screenshot</button>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <script>
+        // Three.js Setup
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        camera.position.set(0, 0, 5);
+        controls.update();
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+
+        let currentPoints = null;
+        let originalCameraPosition = null;
+        let originalControlsTarget = null;
+
+        function loadPointCloud(data) {
+            // Remove existing points
+            if (currentPoints) {
+                scene.remove(currentPoints);
+                currentPoints.geometry.dispose();
+                currentPoints.material.dispose();
+            }
+
+            const geometry = new THREE.BufferGeometry();
+            
+            // Convert positions
+            const positions = new Float32Array(data.positions);
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            
+            // Convert colors
+            const colors = new Float32Array(data.colors);
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+            const material = new THREE.PointsMaterial({
+                size: parseFloat(document.getElementById('pointSize').value),
+                vertexColors: true,
+                sizeAttenuation: true
+            });
+
+            currentPoints = new THREE.Points(geometry, material);
+            scene.add(currentPoints);
+
+            // Auto-adjust camera
+            const box = new THREE.Box3().setFromObject(currentPoints);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const fov = camera.fov * (Math.PI / 180);
+            let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
+            
+            originalCameraPosition = new THREE.Vector3(center.x, center.y, center.z + cameraZ * 1.5);
+            originalControlsTarget = center.clone();
+            
+            camera.position.copy(originalCameraPosition);
+            controls.target.copy(originalControlsTarget);
+            controls.update();
+
+            document.getElementById('info').textContent = 
+                `Loaded: ${data.count} points | Size: ${(JSON.stringify(data).length / 1024).toFixed(1)} KB | Dimensions: ${size.x.toFixed(2)} x ${size.y.toFixed(2)} x ${size.z.toFixed(2)}`;
+        }
+
+        // File handling
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    loadPointCloud(data);
+                } catch (error) {
+                    console.error('Error loading file:', error);
+                    document.getElementById('info').textContent = 'Error loading file: ' + error.message;
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Drag & drop
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // File input
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Click to select file
+        document.addEventListener('click', (e) => {
+            if (e.target === document.body || e.target.id === 'info') {
+                document.getElementById('fileInput').click();
+            }
+        });
+
+        // Controls
+        document.getElementById('pointSize').addEventListener('input', (e) => {
+            if (currentPoints && currentPoints.material) {
+                currentPoints.material.size = parseFloat(e.target.value);
+            }
+        });
+
+        document.getElementById('backgroundColor').addEventListener('input', (e) => {
+            renderer.setClearColor(e.target.value);
+        });
+
+        document.getElementById('resetCamera').addEventListener('click', () => {
+            if (originalCameraPosition && originalControlsTarget) {
+                camera.position.copy(originalCameraPosition);
+                controls.target.copy(originalControlsTarget);
+                controls.update();
+            }
+        });
+
+        document.getElementById('screenshot').addEventListener('click', () => {
+            renderer.render(scene, camera);
+            const canvas = renderer.domElement;
+            const link = document.createElement('a');
+            link.download = 'pointcloud_screenshot.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Resize handling
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'r':
+                case 'R':
+                    document.getElementById('resetCamera').click();
+                    break;
+                case 's':
+                case 'S':
+                    document.getElementById('screenshot').click();
+                    break;
+                case 'f':
+                case 'F':
+                    document.getElementById('fileInput').click();
+                    break;
+            }
+        });
+    </script>
+</body>
+</html> 
