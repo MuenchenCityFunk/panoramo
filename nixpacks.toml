@@ -1,0 +1,8 @@
+﻿[phases.setup]
+nixPkgs = ["python39", "python39Packages.pip"]
+
+[phases.install]
+cmds = ["pip install -r requirements.txt"]
+
+[start]
+cmd = "python3 panorama_api.py"
