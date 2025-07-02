@@ -1,1 +1,1 @@
-web: python panorama_api.py 
+"web: python3 panorama_api.py" 
