@@ -299,17 +299,17 @@
         let isRecording = false;
         let recordingStartTime = null;
         
-        // Ersetze die FLASK_API_URL Definition (ca. Zeile 302)
-        // Automatische URL-Erkennung für Entwicklung und Produktion
+        // Ersetze die FLASK_API_URL Definition
+        // Automatische URL-Erkennung für Railway
         function getFlaskApiUrl() {
             const isLocalDevelopment = window.location.hostname === 'localhost' || 
                                      window.location.hostname === '127.0.0.1';
             
             if (isLocalDevelopment) {
-                // Lokale Entwicklung - verwende localhost
+                // Lokale Entwicklung - verwende separate Ports
                 return 'http://localhost:5001/api';
             } else {
-                // Produktion - verwende relativen Pfad
+                // Railway - verwende relativen Pfad
                 return '/api';
             }
         }

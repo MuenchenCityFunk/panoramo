@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Flask-API für Video-Upload und Panorama-Erstellung
-Railway-Deployment Version
+Railway-Deployment Version - Alles in einem Server
 """
 
 from flask import Flask, request, jsonify, send_file, send_from_directory
@@ -154,17 +154,18 @@ def create_panorama_async(video_path, gps_coords):
         traceback.print_exc()
         return False, None
 
-# Neue Route für die Hauptseite
+# NEUE ROUTEN für die Web-App
 @app.route('/')
 def index():
+    """Hauptseite - serviert integrated-app.html"""
     return send_from_directory('.', 'integrated-app.html')
 
-# Route für statische Dateien
 @app.route('/<path:filename>')
 def static_files(filename):
+    """Serviert alle statischen Dateien"""
     return send_from_directory('.', filename)
 
-# API-Routen mit /api Prefix
+# API-ROUTEN mit /api Prefix
 @app.route('/api/upload-video', methods=['POST'])
 def upload_video():
     """Empfängt Video-Upload und startet Panorama-Erstellung"""
@@ -248,5 +249,6 @@ def serve_output(filename):
 
 if __name__ == '__main__':
     # Railway verwendet die PORT Umgebungsvariable
-    port = int(os.environ.get('PORT', 5001))
+    port = int(os.environ.get('PORT', 8080))
+    print(f"🚀 Starte Server auf Port {port}")
     app.run(host='0.0.0.0', port=port, debug=False) 
