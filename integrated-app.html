@@ -19,17 +19,19 @@
             font-family: "Helvetica Black", "Helvetica Neue", Helvetica, Arial, sans-serif;
             background: #000;
             text-transform: uppercase; /* Text in Großbuchstaben */
-            letter-spacing: 5px; /* Buchstabenabstand vergrößern */
+            letter-spacing: 0.1px; /* Buchstabenabstand vergrößern */
            /* font-stretch: expanded; /* Schrift horizontal strecken */
-            font-weight: 500; /* Extra fett */
-            text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.332); /* Schattierung */
+            font-weight: 600; /* Extra fett */
+            text-shadow: 1px 1px 2px rgb(0, 0, 0); /* Schattierung */
             transform: scaleX(1); /* Horizontale Verzerrung */
             max-width: 100vw; /* Maximale Breite ist Bildschirmbreite */
             overflow-x: hidden; /* Horizontales Scrollen verhindern */
             word-wrap: break-word; /* Wörter umbrechen wenn nötig */
             text-overflow: ellipsis; /* Text mit ... abschneiden wenn er zu lang ist */
+            
         }
-        
+
+   
         #ui-overlay {
             position: fixed;
             top: 20px;
@@ -47,6 +49,16 @@
             margin: 5px;
             font-size: 14px;
             transition: background 0.3s ease;
+            
+            /* Text-Styling vom Body übernehmen */
+            font-family: "Helvetica Black", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            text-transform: uppercase; /* Text in Großbuchstaben */
+            letter-spacing: 0.1px; /* Buchstabenabstand vergrößern */
+            font-weight: 600; /* Extra fett */
+            text-shadow: 2px 2px 4px rgb(255, 255, 255); /* Schattierung */
+            transform: scaleX(1); /* Horizontale Verzerrung */
+            word-wrap: break-word; /* Wörter umbrechen wenn nötig */
+            text-overflow: ellipsis; /* Text mit ... abschneiden wenn er zu lang ist */
         }
         
         .btn:hover {
@@ -125,39 +137,57 @@
             -webkit-appearance: none;
             appearance: none;
             width: 150px;
-            height: 8px;
-            background: rgb(0, 0, 0); /* Schwarzer Hintergrund */
-            border-radius: 4px;
+            height: 40px;
+            background: transparent;
+            border-radius: 0px;
             outline: none;
             cursor: pointer;
+            touch-action: manipulation;
         }
         
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 0; /* Thumb unsichtbar machen */
-            height: 0;
+            width: 20px;
+            height: 20px;
             background: transparent;
             border: none;
+            border-radius: 0%;
+            cursor: pointer;
         }
         
         input[type="range"]::-moz-range-thumb {
-            width: 0; /* Für Firefox */
-            height: 0;
+            width: 20px;
+            height: 20px;
             background: transparent;
             border: none;
+            border-radius: 0%;
+            cursor: pointer;
+            box-shadow: none;
         }
         
-        /* Der gefüllte Teil des Sliders */
         input[type="range"]::-webkit-slider-runnable-track {
-            background: linear-gradient(to right, 
+            background: var(--slider-fill, linear-gradient(to right, 
                 rgb(255, 255, 255) 0%, 
-                rgb(255, 255, 255) var(--value, 0%), 
-                rgb(0, 0, 0) var(--value, 0%), 
-                rgb(0, 0, 0) 100%
-            );
-            height: 16px;
+                rgb(255, 255, 255) 0%, 
+                transparent 0%, 
+                transparent 100%
+            ));
+            height: 20px;
             border-radius: 0px;
+            border: 1px solid rgb(255, 255, 255);
+        }
+        
+        input[type="range"]::-moz-range-track {
+            background: var(--slider-fill, linear-gradient(to right, 
+                rgb(255, 255, 255) 0%, 
+                rgb(255, 255, 255) 0%, 
+                transparent 0%, 
+                transparent 100%
+            ));
+            height: 8px;
+            border-radius: 0px;
+            border: 1px solid rgb(255, 255, 255);
         }
 
         .video-container {
@@ -166,8 +196,8 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(0, 0, 0, 0.9);
-            padding: 20px;
-            border-radius: 10px;
+            padding: 10px;
+            border-radius: 0px;
             z-index: 1000;
             text-align: center;
         }
@@ -175,7 +205,7 @@
         #video-preview {
             width: 320px;
             height: 240px;
-            border-radius: 8px;
+            border-radius: 0px;
             margin-bottom: 15px;
         }
 
@@ -195,6 +225,411 @@
         .video-controls .btn {
             padding: 10px 15px;
             font-size: 14px;
+        }
+
+        /* NEUE CSS-STYLES FÜR AUDIO-VISUALISIERUNG */
+        #audio-visualization {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 120px;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            z-index: 1002;
+            display: block;
+        }
+        
+        /* Phänomene-Kreis (kleiner innerer Kreis) */
+        #phenomena-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Phänomene-Labels */
+        .phenomenon-label {
+            position: absolute;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        #loud-label {
+            top: 50%;
+            right: -25px;
+            transform: translateY(-50%);
+        }
+        
+        #quiet-label {
+            top: 50%;
+            left: -25px;
+            transform: translateY(-50%);
+        }
+        
+        #scattered-label {
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        #sorted-label {
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        /* Grüner Indikator-Punkt */
+        #audio-indicator {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #00ff00;
+            border-radius: 50%;
+            border: 1px solid white;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+        }
+        
+        /* Detailfenster */
+        #audio-detail-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            z-index: 10000;
+            display: none;
+            cursor: grab;
+        }
+        
+        #audio-detail-window:active {
+            cursor: grabbing;
+        }
+        
+        /* Schließen-Button */
+        #audio-detail-close {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            width: 30px;
+            height: 30px;
+            background: #ff4444;
+            border: 2px solid white;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10001;
+        }
+        
+        /* Großer Parameter-Kreis */
+        #parameter-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border: 3px solid rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Parameter-Labels */
+        .parameter-label {
+            position: absolute;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        #large-points-label {
+            top: 50%;
+            right: -80px;
+            transform: translateY(-50%);
+        }
+        
+        #small-points-label {
+            top: 50%;
+            left: -80px;
+            transform: translateY(-50%);
+        }
+        
+        #strong-distortion-label {
+            top: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        #no-distortion-label {
+            bottom: -80px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* NEUE CSS-STYLES FÜR DAS DETAILFENSTER */
+        #audio-detail-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            z-index: 10000;
+            display: none;
+            cursor: grab;
+        }
+        
+        #audio-detail-window:active {
+            cursor: grabbing;
+        }
+        
+        #audio-detail-window::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+        }
+        
+        #audio-detail-window::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+        }
+        
+        #detail-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            background: #00ff00;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        .detail-labels {
+            position: absolute;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+        
+        .detail-label-left { left: 20px; top: 50%; transform: translateY(-50%); }
+        .detail-label-right { right: 20px; top: 50%; transform: translateY(-50%); }
+        .detail-label-top { top: 20px; left: 50%; transform: translateX(-50%); }
+        .detail-label-bottom { bottom: 20px; left: 50%; transform: translateX(-50%); }
+        
+        #detail-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 10001;
+        }
+        
+        #detail-close-btn:hover {
+            background: rgba(255, 0, 0, 1);
+        }
+        
+        #rotation-control {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: white;
+            font-size: 10px;
+        }
+        
+        #rotation-slider {
+            width: 200px;
+            margin: 10px 0;
+        }
+        
+        .rotation-step-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            padding: 5px 10px;
+            margin: 0 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+        
+        .rotation-step-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .rotation-step-btn.active {
+            background: rgba(0, 255, 0, 0.5);
+            border-color: rgba(0, 255, 0, 0.8);
+        }
+
+        /* NEUE CSS-STYLES FÜR DAS DETAILFENSTER MIT 8 BEGRIFFEN */
+        #audio-detail-window {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            z-index: 10000;
+            display: none;
+            cursor: grab;
+        }
+        
+        #audio-detail-window:active {
+            cursor: grabbing;
+        }
+        
+        #audio-detail-window::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+        }
+        
+        #audio-detail-window::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+        }
+        
+        #detail-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            background: #00ff00;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        .detail-labels {
+            position: absolute;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            text-transform: uppercase;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        
+        /* NEU: 8 Positionen für die Labels */
+        .detail-label-0 { left: 50%; top: 10px; transform: translateX(-50%); }      /* Oben */
+        .detail-label-1 { right: 10px; top: 50%; transform: translateY(-50%); }     /* Rechts */
+        .detail-label-2 { left: 50%; bottom: 10px; transform: translateX(-50%); }   /* Unten */
+        .detail-label-3 { left: 10px; top: 50%; transform: translateY(-50%); }      /* Links */
+        .detail-label-4 { right: 25%; top: 10px; transform: translateX(-50%); }     /* Oben-Rechts */
+        .detail-label-5 { right: 10px; bottom: 25%; transform: translateY(-50%); }  /* Rechts-Unten */
+        .detail-label-6 { left: 25%; bottom: 10px; transform: translateX(-50%); }   /* Unten-Links */
+        .detail-label-7 { left: 10px; top: 25%; transform: translateY(-50%); }      /* Links-Oben */
+        
+        #detail-close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 10001;
+        }
+        
+        #detail-close-btn:hover {
+            background: rgba(255, 0, 0, 1);
+        }
+        
+        #rotation-control {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            color: white;
+            font-size: 10px;
+        }
+        
+        #rotation-slider {
+            width: 200px;
+            margin: 10px 0;
         }
     </style>
 </head>
@@ -221,20 +656,21 @@
 
     <!-- Haupt-UI -->
     <div id="ui-overlay">
-        <button class="btn" id="capture-btn">NEWPNTCLD</button>
         <button class="btn" id="toggle-path-btn">ANTPATH</button>
-        <button class="btn" id="center-camera-btn">CNTCAM</button>
-        <button class="btn" id="load-panorama-btn">LOAD PANORAMA</button>
-        <button class="btn" id="load-all-panoramas-btn" style="background-color: #8844ff;">LOAD ALL PANORAMAS</button>
+        <button class="btn" id="center-camera-btn">HOMESICK?</button>
+        <button class="btn" id="load-all-panoramas-btn">LOAD ALL</button>
         
         <!-- NEUE VIDEO-UPLOAD BUTTONS -->
-        <button class="btn" id="record-video-btn" style="background-color: #ff4444;">RECORD VIDEO</button>
-        <button class="btn" id="upload-video-btn" style="background-color: #44aa44;">UPLOAD VIDEO</button>
+        <button class="btn" id="record-video-btn">FOUND YOU</button>
+        <button class="btn" id="upload-video-btn">REMEMBERED</button>
+        
+        <!-- NEUER BUTTON: Audio abspielen (in der Map) -->
+        <button class="btn" id="play-audio-btn" style="display: none;">PLAY SOUND</button>
         
         <!-- Point Cloud Controls -->
-        <div style="margin-top: 10px; background: rgba(0, 0, 0, 0.7); padding: 30px; border-radius: 8px; border: 0px solid rgba(255, 255, 255, 0.8)">
-            <label for="pointSize" style="color: white; font-size: 40px; display: block; margin-bottom: 5px;">PNTS</label>
-            <input type="range" id="pointSize" min="0.001" max="2.0" step="0.001" value="0.05" style="width: 150px;">
+        <div style="margin-top: 10px; background: rgba(0, 0, 0, 0.7); padding: 30px; border-radius: 0px; border: 0px solid rgba(255, 255, 255, 0.8)">
+            <label for="pointSize" style="color: white; font-size: 10px; display: block; margin-bottom: 5px;">PNTS</label>
+            <input type="range" id="pointSize" min="0.01" max="2.0" step="0.01" value="0.05" style="width: 150px; height: 40px;">
             <span id="pointSizeValue" style="color: white; font-size: 12px; margin-left: 10px;">0.05</span>
         </div>
     </div>
@@ -265,7 +701,47 @@
                 <button class="btn" id="start-recording-btn">START RECORDING</button>
                 <button class="btn" id="stop-recording-btn" disabled>STOP RECORDING</button>
                 <button class="btn" id="cancel-recording-btn">CANCEL</button>
+                <!-- NEUER BUTTON: Audio abspielen -->
+                <!-- <button class="btn" id="play-audio-btn" style="display: none;">PLAY SOUND</button> -->
             </div>
+        </div>
+    </div>
+
+    <!-- NEUE AUDIO-VISUALISIERUNG -->
+    <div id="audio-visualization">
+        <div class="audio-labels audio-label-left">LEISE</div>
+        <div class="audio-labels audio-label-right">LAUT</div>
+        <div class="audio-labels audio-label-top">ZERSCHOSSEN</div>
+        <div class="audio-labels audio-label-bottom">GLEICH</div>
+        <div id="audio-indicator"></div>
+    </div>
+
+    <!-- NEUES DETAILFENSTER MIT 8 BEGRIFFEN -->
+    <div id="audio-detail-window">
+        <button id="detail-close-btn">×</button>
+        
+        <!-- NEU: 8 Labels die sich mit der Rotation bewegen -->
+        <div class="detail-labels detail-label-0" data-original-text="KLEINE PUNKTE">KLEINE PUNKTE</div>
+        <div class="detail-labels detail-label-1" data-original-text="GROSSE PUNKTE">GROSSE PUNKTE</div>
+        <div class="detail-labels detail-label-2" data-original-text="SORTED">SORTED</div>
+        <div class="detail-labels detail-label-3" data-original-text="SCATTERED">SCATTERED</div>
+        <div class="detail-labels detail-label-4" data-original-text="FLACHE DEPTH">FLACHE DEPTH</div>
+        <div class="detail-labels detail-label-5" data-original-text="STARKE DEPTH">STARKE DEPTH</div>
+        <div class="detail-labels detail-label-6" data-original-text="GLEICH">GLEICH</div>
+        <div class="detail-labels detail-label-7" data-original-text="ABWECHSELND">ABWECHSELND</div>
+        
+        <div id="detail-indicator"></div>
+        
+        <div id="rotation-control">
+            <div>ROTATION: <span id="rotation-value">0°</span></div>
+            <input type="range" id="rotation-slider" min="0" max="270" value="0" step="90">
+            <div style="margin: 10px 0;">
+                <button class="rotation-step-btn active" data-angle="0">0°</button>
+                <button class="rotation-step-btn" data-angle="90">90°</button>
+                <button class="rotation-step-btn" data-angle="180">180°</button>
+                <button class="rotation-step-btn" data-angle="270">270°</button>
+            </div>
+            <div style="font-size: 8px; margin-top: 5px;">Nur Vierteldrehungen erlaubt</div>
         </div>
     </div>
 
@@ -297,7 +773,33 @@
         let recordedChunks = [];
         let videoStream = null;
         let isRecording = false;
-        let recordingStartTime = null;
+        let recordingStartTime = null; // BEHALTE diese
+        
+        // NEUE GLOBALE VARIABLEN für Audio-Aufnahme
+        let audioRecorder = null;
+        let audioChunks = [];
+        let recordedAudioBlob = null;
+        let dbLevels = []; // Array für alle gemessenen Dezibel-Werte
+        let dbMeasurementInterval = null;
+        
+        // NEUE GLOBALE VARIABLEN für Audio-Wiedergabe
+        let audioPlayer = null;
+        let currentAudioContext = null;
+        let audioAnalyser = null;
+        let audioSource = null;
+        let isPlayingAudio = false;
+        let audioPlaybackInterval = null;
+        
+        // NEUE GLOBALE FUNKTION (außerhalb aller anderen Funktionen)
+        function getDeviceId() {
+            let deviceId = localStorage.getItem('device_id');
+            if (!deviceId) {
+                deviceId = 'device_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('device_id', deviceId);
+                console.log("🆔 Neue Device-ID erstellt:", deviceId);
+            }
+            return deviceId;
+        }
         
         // Ersetze die FLASK_API_URL Definition
         // Automatische URL-Erkennung für Railway
@@ -329,6 +831,31 @@
         const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         
+        // Orbit Controls für bessere Sphäre-Navigation konfigurieren
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.screenSpacePanning = false;
+        
+        // Zoom-Limits für Sphäre - erlaube sehr nahen Zoom
+        controls.minDistance = 0.1;  // Kann sehr nah an die Sphäre heranzoomen
+        controls.maxDistance = 200;  // Kann weit herauszoomen
+        
+        // Rotation-Limits - erlaube vollständige Rotation
+        controls.minPolarAngle = 0;   // Vollständige vertikale Rotation
+        controls.maxPolarAngle = Math.PI;
+        
+        // Automatische Rotation deaktivieren
+        controls.autoRotate = false;
+        controls.autoRotateSpeed = 0;
+        
+        // Smooth Zoom für bessere Navigation
+        controls.enableZoom = true;
+        controls.zoomSpeed = 1.0;
+        
+        // Panning für Navigation innerhalb der Sphäre
+        controls.enablePan = true;
+        controls.panSpeed = 1.0;
+        
         // ===== HILFSFUNKTIONEN =====
         function showStatus(message, type = 'info') {
             const statusDiv = document.getElementById('status');
@@ -357,27 +884,14 @@
         }
         
         // ===== EVENT LISTENERS =====
-        document.getElementById('capture-btn').addEventListener('click', () => {
-            document.getElementById('camera-ui').style.display = 'block';
-            initCamera();
-        });
-        
-        document.getElementById('capture-photo-btn').addEventListener('click', capturePhoto);
-        
-        document.getElementById('cancel-capture-btn').addEventListener('click', () => {
-            document.getElementById('camera-ui').style.display = 'none';
-            stopCamera();
-        });
-        
-        // ===== ZUSÄTZLICHE EVENT LISTENERS =====
         document.getElementById('toggle-path-btn').addEventListener('click', togglePath);
         document.getElementById('center-camera-btn').addEventListener('click', centerCameraOnUser);
-        document.getElementById('load-panorama-btn').addEventListener('click', loadPanoramaFromServer);
+        document.getElementById('load-all-panoramas-btn').addEventListener('click', loadAllAvailablePanoramas);
         
         // Punktgrößen-Slider
         document.getElementById('pointSize').addEventListener('input', (e) => {
             const value = parseFloat(e.target.value);
-            document.getElementById('pointSizeValue').textContent = value.toFixed(3);
+            document.getElementById('pointSizeValue').textContent = value.toFixed(2);
             
             // Update alle Point Clouds in der Szene
             scene.children.forEach(child => {
@@ -385,6 +899,32 @@
                     child.material.size = value;
                 }
             });
+            
+            // NEU: Update Slider-Füllung
+            updateSliderFill(e.target);
+        });
+        
+        // NEUE FUNKTION: Slider-Füllung aktualisieren
+        function updateSliderFill(slider) {
+            const value = parseFloat(slider.value);
+            const min = parseFloat(slider.min);
+            const max = parseFloat(slider.max);
+            const percentage = ((value - min) / (max - min)) * 100;
+            
+            const fillGradient = `linear-gradient(to right, 
+                rgb(255, 255, 255) 0%, 
+                rgb(255, 255, 255) ${percentage}%, 
+                transparent ${percentage}%, 
+                transparent 100%
+            )`;
+            
+            slider.style.setProperty('--slider-fill', fillGradient);
+        }
+        
+        // NEU: Initialisiere Slider-Füllung beim Laden
+        document.addEventListener('DOMContentLoaded', function() {
+            const slider = document.getElementById('pointSize');
+            updateSliderFill(slider);
         });
         
         // ===== KAMERA UND POINT CLOUD FUNKTIONEN =====
@@ -724,14 +1264,28 @@
             
             objectsToUpdate.push(pointCloudObject);
             
-            // Kamera auf Point Cloud zentrieren (GPS-Position aus Metadaten)
-            const gpsPos = pointCloudData.metadata.gps3DPosition;
-            camera.position.set(gpsPos.x + 3, gpsPos.y + 3, gpsPos.z + 3);
-            camera.lookAt(gpsPos.x, gpsPos.y, gpsPos.z);
-            controls.target.set(gpsPos.x, gpsPos.y, gpsPos.z);
-            controls.update();
+            // Verbesserte Kamera-Positionierung für Panoramen
+            if (pointCloudData.metadata && pointCloudData.metadata.gps3DPosition) {
+                const gpsPos = pointCloudData.metadata.gps3DPosition;
+                console.log("🎯 Zentriere Kamera auf Panorama bei:", gpsPos);
+                
+                // Kamera näher an das Panorama setzen
+                camera.position.set(gpsPos.x + 10, gpsPos.y + 10, gpsPos.z + 10);
+                camera.lookAt(gpsPos.x, gpsPos.y, gpsPos.z);
+                controls.target.set(gpsPos.x, gpsPos.y, gpsPos.z);
+                controls.update();
+                
+                console.log("📷 Kamera auf Panorama zentriert");
+            } else {
+                // Fallback für normale Point Clouds
+                const gpsPos = pointCloudData.metadata.gps3DPosition;
+                camera.position.set(gpsPos.x + 3, gpsPos.y + 3, gpsPos.z + 3);
+                camera.lookAt(gpsPos.x, gpsPos.y, gpsPos.z);
+                controls.target.set(gpsPos.x, gpsPos.y, gpsPos.z);
+                controls.update();
+            }
             
-            console.log("Point Cloud zur Szene hinzugefügt bei GPS-Position:", gpsPos);
+            console.log("Point Cloud zur Szene hinzugefügt bei GPS-Position:", pointCloudData.metadata.gps3DPosition);
             console.log("Point Cloud Punkte:", pointCloudData.count);
             
             showStatus(`${pointCloudData.count.toLocaleString()} Punkte erstellt!`, 'success');
@@ -766,8 +1320,8 @@
         
         // ===== GPS UND MAP FUNKTIONALITÄT =====
         
-        // GPS-Koordinaten zu 3D-Position umwandeln
-        function geoTo3D(lat, lon) { 
+        // GPS-Koordinaten zu 3D-Position umwandeln (mit Höhe)
+        function geoTo3D(lat, lon, altitude = 0) { 
             // Europa Bounding Box für Berlin/Paris Region
             const minLat = 35.0; // Südlichster Punkt
             const maxLat = 70.0; // Nördlichster Punkt
@@ -781,12 +1335,12 @@
             // Zu 3D-Koordinaten mappen mit größerem Skalierungsfaktor
             const x = (normalizedLon - 0.5) * 100; // -50 bis +50
             const z = (normalizedLat - 0.5) * 100; // --50 bis +50
-            const y = 0; // Höhe (kann später angepasst werden)
+            const y = altitude / 10; // Höhe in Metern, skaliert (10m = 1 Einheit)
             
             return { x, y, z };
         }
         
-        // Benutzer-Position verfolgen
+        // Benutzer-Position verfolgen (mit Höhe)
         function getUserLocation() {
             if ("geolocation" in navigator) {
                 console.log("GPS verfügbar - starte Ortung...");
@@ -795,7 +1349,7 @@
                 // Path-Geometrie erstellen
                 pathGeometry = new THREE.BufferGeometry();
                 const pathMaterial = new THREE.LineBasicMaterial({
-                    color: 0x00ff00,
+                    color: 0xffffff,
                     linewidth: 5,
                     transparent: true,
                     opacity: 0.8
@@ -810,17 +1364,19 @@
                     (position) => {
                         const newLocation = {
                             lat: position.coords.latitude,
-                            lon: position.coords.longitude
+                            lon: position.coords.longitude,
+                            altitude: position.coords.altitude || 0 // Höhe hinzufügen
                         };
                         
                         console.log("GPS Position erhalten:", newLocation);
                         console.log("GPS Genauigkeit:", position.coords.accuracy, "Meter");
+                        console.log("GPS Höhe:", position.coords.altitude, "Meter");
                         
                         // Benutzer-Position aktualisieren
                         userLocation = newLocation;
                         
-                        // 3D-Position berechnen
-                        const pathPoint = geoTo3D(newLocation.lat, newLocation.lon);
+                        // 3D-Position berechnen (mit Höhe)
+                        const pathPoint = geoTo3D(newLocation.lat, newLocation.lon, newLocation.altitude);
                         
                         // Prüfen ob Bewegung signifikant ist (> 0.1 Einheiten)
                         let shouldAddPoint = true;
@@ -906,40 +1462,40 @@
         }
         
         // Benutzer - Objekt erstellen
-            function createUserLocationObject(position) {
-                const vertices = [] 
-                const numPoints = 100; 
-                const size = 1; 
-                let x,y,z; 
+        function createUserLocationObject(position) {
+            const vertices = [];
+            const numPoints = 50; // Reduziert von 100 auf 50
+            const size = 0.5; // Reduziert von 1 auf 0.5
+            let x, y, z;
 
             // Punkte um (0,0,0) generieren (nur Offset, keine GPS-Koordinaten)
-            for (let i = 0; i < numPoints; i += 1) { 
-                x = Math.random() * size - size * 0.5; // -0.5 bis +0.5
-                y = Math.random() * size - size * 0.5; 
-                z = Math.random() * size - size * 0.5; 
-                vertices.push(x, y, z); 
+            for (let i = 0; i < numPoints; i += 1) {
+                x = Math.random() * size - size * 0.5; // -0.25 bis +0.25
+                y = Math.random() * size - size * 0.5;
+                z = Math.random() * size - size * 0.5;
+                vertices.push(x, y, z);
             }
 
             // Drei spezifische Punkte bei (0,0,0)
-            //vertices.push(
-           //     0, 0, 0,           // Zentrum
-            //    0, 1, 0,           // 1 nach oben
-             //   0, 0, 1            // 1 nach vorne
-            //); 
+            vertices.push(
+                0, 0, 0,           // Zentrum
+                0, 0.5, 0,         // 0.5 nach oben (reduziert von 1)
+                0, 0, 0.5          // 0.5 nach vorne (reduziert von 1)
+            );
 
-            const geometry = new THREE.BufferGeometry(); 
-            const material = new THREE.MeshBasicMaterial({ 
-                color: 0xff0000, 
-                wireframe: true, 
-                side: THREE.DoubleSide, 
-                transparent: true, 
-                opacity: 0.5
-            }); 
+            const geometry = new THREE.BufferGeometry();
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x000000, // Schwarz statt rot
+                wireframe: true,
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.7 // Etwas weniger transparent
+            });
             geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-            const mesh = new THREE.Mesh(geometry, material); 
+            const mesh = new THREE.Mesh(geometry, material);
             mesh.position.set(position.x, position.y, position.z); // GPS-Position setzen
-        
-            return { mesh }; 
+
+            return { mesh };
         }
         
         // Pfad-Line aktualisieren
@@ -1042,8 +1598,54 @@
                         const positions = new Float32Array(numPoints * 3);
                         const colors = new Float32Array(numPoints * 3);
                         
-                        const baseRadius = 25.0;
-                        const depthInfluence = 8.0;
+                        // NEU: Audio-Analyse durchführen
+                        let audioAnalysis = null;
+                        if (dbLevels && dbLevels.length > 0) {
+                            audioAnalysis = analyzeAudioData(dbLevels);
+                            console.log("🎵 Audio-Analyse für Panorama:", audioAnalysis);
+                            
+                            // Audio-Visualisierung aktualisieren
+                            updateAudioVisualization(audioAnalysis);
+                        }
+                        
+                        // NEU: Audio-basierte Modifikationen (SENSIBLER)
+                        let baseRadius = 25.0;
+                        let depthInfluence = 8.0;
+                        let pointSizeMultiplier = 1.0;
+                        
+                        if (audioAnalysis) {
+                            // Punktgröße basierend auf durchschnittlicher Lautstärke
+                            // Leise = kleine Punkte (0.5x), Laut = große Punkte (2.0x)
+                            pointSizeMultiplier = 0.5 + (audioAnalysis.volumeScore * 1.5);
+                            
+                            // NEU: SENSIBLERE Depth-Influence basierend auf Konsistenz
+                            // Gleichmäßig = flacher (0.3x), Unterschiedlich = extremer (3.0x)
+                            const depthMultiplier = 0.3 + ((1 - audioAnalysis.consistencyScore) * 2.7); // NEU: 0.3-3.0 statt 0.5-2.0
+                            depthInfluence *= depthMultiplier;
+                            
+                            console.log(` Audio-Modifikationen (SENSIBEL):`);
+                            console.log(`  Punktgröße: ${pointSizeMultiplier.toFixed(2)}x`);
+                            console.log(`  Depth-Influence: ${depthInfluence.toFixed(2)} (${depthMultiplier.toFixed(2)}x)`);
+                        }
+                        
+                        // Bestehende Stitching-Statistiken
+                        if (metadata.stitching_stats) {
+                            const successfulFrames = metadata.stitching_stats.successful_frames;
+                            const frameSteps = Math.floor(successfulFrames / 5);
+                            baseRadius = Math.max(10.0, Math.min(50.0, 10.0 + (frameSteps * 5)));
+                            
+                            // NEU: Audio-Modifikationen mit Stitching kombinieren (SENSIBLER)
+                            if (audioAnalysis) {
+                                depthInfluence = Math.max(4.0, Math.min(16.0, 4.0 + (frameSteps * 2)));
+                                // NEU: SENSIBLERE Depth-Multiplikation
+                                const depthMultiplier = 0.3 + ((1 - audioAnalysis.consistencyScore) * 2.7); // NEU: 0.3-3.0
+                                depthInfluence *= depthMultiplier;
+                            } else {
+                                depthInfluence = Math.max(4.0, Math.min(16.0, 4.0 + (frameSteps * 2)));
+                            }
+                            
+                            console.log(` Stitching + Audio: Radius=${baseRadius.toFixed(1)}, Depth=${depthInfluence.toFixed(1)}`);
+                        }
                         
                         let pointIndex = 0;
                         const progressInterval = Math.max(1, Math.floor(numPoints / 10));
@@ -1093,8 +1695,16 @@
                                 type: 'panorama_sphere',
                                 baseRadius: baseRadius,
                                 depthInfluence: depthInfluence,
-                                gps3DPosition: gps3DPosition
+                                gps3DPosition: gps3DPosition,
+                                audioAnalysis: audioAnalysis, // NEU: Audio-Analyse speichern
+                                pointSizeMultiplier: pointSizeMultiplier // NEU: Punktgrößen-Multiplikator
                             }
+                        };
+                        
+                        // NEU: Audio-Modifikationen für aktuelle Point Cloud speichern
+                        currentPanoramaAudioModifications = {
+                            pointSizeMultiplier: pointSizeMultiplier,
+                            audioAnalysis: audioAnalysis
                         };
                         
                         createPointCloudInScene(pointCloudData, { x: 0, y: 0, z: 0 });
@@ -1104,12 +1714,16 @@
                             pointCloudData: pointCloudData,
                             imageUrl: imageUrl,
                             depthMapUrl: depthMapUrl,
-                            type: 'sphere'
+                            type: 'sphere',
+                            audioAnalysis: audioAnalysis // NEU: Audio-Analyse hinzufügen
                         });
                         
-                        console.log("✅ 360° Panorama-Sphäre mit Depth Map erfolgreich erstellt");
-                        console.log("📍 Sphäre-Position:", gps3DPosition);
+                        console.log("✅ 360° Panorama-Sphäre mit Audio-Modifikationen erstellt");
+                        console.log(" Sphäre-Position:", gps3DPosition);
                         console.log("🔵 Sphäre-Radius:", baseRadius);
+                        if (audioAnalysis) {
+                            console.log(" Audio-Modifikationen angewendet");
+                        }
                         resolve();
                         
                     } catch (error) {
@@ -1124,36 +1738,49 @@
             let metadata;
             
             try {
+                const deviceId = getDeviceId(); // NEU: Device-ID hinzufügen
                 showStatus("Lade Panorama mit Depth Map vom Server...", "processing");
                 
-                // Metadaten laden
+                // Metadaten laden - NEU: Device-spezifische URL
                 const isLocalDevelopment = window.location.protocol === 'file:';
                 let metadataUrl = isLocalDevelopment ? 
-                    './output/panorama_metadata.json' : 
-                    `${window.location.origin}/output/panorama_metadata.json`;
+                    `./output/${deviceId}/panorama_metadata.json` : 
+                    `${window.location.origin}/output/${deviceId}/panorama_metadata.json`;
                 
                 const metadataResponse = await fetch(metadataUrl);
                 if (!metadataResponse.ok) {
-                    throw new Error('Keine Panorama-Metadaten gefunden.');
+                    // Fallback auf globale Metadaten
+                    console.log("⚠️ Keine device-spezifischen Metadaten, verwende globale");
+                    metadataUrl = isLocalDevelopment ? 
+                        './output/panorama_metadata.json' : 
+                        `${window.location.origin}/output/panorama_metadata.json`;
+                    
+                    const fallbackResponse = await fetch(metadataUrl);
+                    if (!fallbackResponse.ok) {
+                        throw new Error('Keine Panorama-Metadaten gefunden.');
+                    }
+                    metadata = await fallbackResponse.json();
+                } else {
+                    metadata = await metadataResponse.json();
                 }
                 
-                metadata = await metadataResponse.json();
                 console.log("✅ Panorama-Metadaten geladen:", metadata);
                 
+                // Rest der Funktion bleibt gleich...
                 // Prüfe ob Depth Map existiert
                 const depthMapFile = metadata.additional_files?.find(file => file.type === 'depth_map');
                 if (!depthMapFile) {
                     throw new Error('Keine Depth Map gefunden. Verwende Standard-Point Cloud.');
                 }
                 
-                // URLs für Panorama und Depth Map
+                // URLs für Panorama und Depth Map - NEU: Device-spezifische Pfade
                 const panoramaUrl = isLocalDevelopment ? 
-                    `./output/${metadata.panorama_file}` : 
-                    `${window.location.origin}/output/${metadata.panorama_file}`;
+                    `./output/${deviceId}/${metadata.panorama_file}` : 
+                    `${window.location.origin}/output/${deviceId}/${metadata.panorama_file}`;
                     
                 const depthMapFileUrl = isLocalDevelopment ? 
-                    `./output/${depthMapFile.filename}` : 
-                    `${window.location.origin}/output/${depthMapFile.filename}`;
+                    `./output/${deviceId}/${depthMapFile.filename}` : 
+                    `${window.location.origin}/output/${deviceId}/${depthMapFile.filename}`;
                 
                 // Prüfe ob Dateien existieren
                 const [panoramaResponse, depthMapResponse] = await Promise.all([
@@ -1162,49 +1789,48 @@
                 ]);
                 
                 if (!panoramaResponse.ok) {
-                    throw new Error(`Panorama-Datei nicht gefunden: ${metadata.panorama_file}`);
+                    // Fallback auf globale Pfade
+                    const globalPanoramaUrl = isLocalDevelopment ? 
+                        `./output/${metadata.panorama_file}` : 
+                        `${window.location.origin}/output/${metadata.panorama_file}`;
+                    const globalDepthMapUrl = isLocalDevelopment ? 
+                        `./output/${depthMapFile.filename}` : 
+                        `${window.location.origin}/output/${depthMapFile.filename}`;
+                    
+                    const [globalPanoramaResponse, globalDepthMapResponse] = await Promise.all([
+                        fetch(globalPanoramaUrl),
+                        fetch(globalDepthMapUrl)
+                    ]);
+                    
+                    if (!globalPanoramaResponse.ok) {
+                        throw new Error(`Panorama-Datei nicht gefunden: ${metadata.panorama_file}`);
+                    }
+                    if (!globalDepthMapResponse.ok) {
+                        throw new Error(`Depth Map nicht gefunden: ${depthMapFile.filename}`);
+                    }
+                    
+                    // Verwende globale URLs
+                    const panoramaBlob = await globalPanoramaResponse.blob();
+                    const depthMapBlob = await globalDepthMapResponse.blob();
+                    const imageUrl = URL.createObjectURL(panoramaBlob);
+                    const depthMapBlobUrl = URL.createObjectURL(depthMapBlob);
+                    
+                    await createPanoramaSphereFromDepthMap(imageUrl, depthMapBlobUrl, metadata);
+                } else {
+                    // Verwende device-spezifische URLs
+                    const panoramaBlob = await panoramaResponse.blob();
+                    const depthMapBlob = await depthMapResponse.blob();
+                    const imageUrl = URL.createObjectURL(panoramaBlob);
+                    const depthMapBlobUrl = URL.createObjectURL(depthMapBlob);
+                    
+                    await createPanoramaSphereFromDepthMap(imageUrl, depthMapBlobUrl, metadata);
                 }
-                
-                if (!depthMapResponse.ok) {
-                    throw new Error(`Depth Map nicht gefunden: ${depthMapFile.filename}`);
-                }
-                
-                showStatus("Erstelle 360° Panorama-Sphäre mit Depth Map...", "processing");
-                
-                // Blob-URLs erstellen
-                const panoramaBlob = await panoramaResponse.blob();
-                const depthMapBlob = await depthMapResponse.blob();
-                const imageUrl = URL.createObjectURL(panoramaBlob);
-                const depthMapBlobUrl = URL.createObjectURL(depthMapBlob);
-                
-                // 360° Sphäre mit Depth Map erstellen
-                await createPanoramaSphereFromDepthMap(imageUrl, depthMapBlobUrl, metadata);
                 
                 showStatus(`360° Panorama-Sphäre erfolgreich geladen! (${metadata.image_width}x${metadata.image_height})`, "success");
                 
             } catch (error) {
                 console.error("❌ Fehler beim Laden des Panoramas:", error);
                 showStatus(`Fehler: ${error.message}`, "error");
-                
-                // Fallback: Standard-Point Cloud ohne Depth Map
-                if (metadata) {
-                    try {
-                        showStatus("Versuche Standard-Point Cloud...", "info");
-                        
-                        // isLocalDevelopment im Fallback neu definieren
-                        const isLocalDev = window.location.protocol === 'file:';
-                        const panoramaUrl = isLocalDev ? 
-                            `./output/${metadata.panorama_file}` : 
-                            `${window.location.origin}/output/${metadata.panorama_file}`;
-                            
-                        const panoramaResponse = await fetch(panoramaUrl);
-                        const panoramaBlob = await panoramaResponse.blob();
-                        const imageUrl = URL.createObjectURL(panoramaBlob);
-                        await createPointCloudFromPanorama(imageUrl, metadata);
-                    } catch (fallbackError) {
-                        console.error("❌ Auch Fallback fehlgeschlagen:", fallbackError);
-                    }
-                }
             }
         }
         
@@ -1270,18 +1896,23 @@
         // Neue Funktion: Lade alle verfügbaren Panoramen
         async function loadAllAvailablePanoramas() {
             try {
+                const deviceId = getDeviceId(); // NEU
                 showStatus("Lade alle verfügbaren Panoramen...", "processing");
                 
                 const isLocalDevelopment = window.location.protocol === 'file:';
                 
-                // Lade die Metadaten-Datei zuerst
+                // NEU: Device-spezifische Metadaten-URL
                 let metadataUrl = isLocalDevelopment ? 
-                    './output/panorama_metadata.json' : 
-                    `${window.location.origin}/output/panorama_metadata.json`;
+                    `./output/${deviceId}/panorama_metadata.json` : 
+                    `${window.location.origin}/output/${deviceId}/panorama_metadata.json`;
                 
+                // Fallback auf globale Metadaten wenn device-spezifische nicht existiert
                 const metadataResponse = await fetch(metadataUrl);
                 if (!metadataResponse.ok) {
-                    throw new Error('Keine Panorama-Metadaten gefunden.');
+                    console.log("⚠️ Keine device-spezifischen Panoramen gefunden, verwende globale");
+                    metadataUrl = isLocalDevelopment ? 
+                        './output/panorama_metadata.json' : 
+                        `${window.location.origin}/output/panorama_metadata.json`;
                 }
                 
                 const metadata = await metadataResponse.json();
@@ -1404,8 +2035,8 @@
         // GPS starten
         getUserLocation();
         
-        // Automatisch Panoramen vom Server laden
-        autoLoadPanoramas();
+        // Automatisch Panoramen vom Server laden und Kamera positionieren
+        autoLoadPanoramasAndPositionCamera();
         
         // Starte Animation
         animate();
@@ -1413,24 +2044,81 @@
         // Zeige Status
         showStatus('App bereit! GPS wird initialisiert...', 'info');
         
-        console.log('✅ Schritt 3: Panorama-Integration für Handy-Workflow geladen');
+        // Neue Funktion: Lade Panoramen und positioniere Kamera
+        async function autoLoadPanoramasAndPositionCamera() {
+            try {
+                console.log("🔄 Lade alle verfügbaren Panoramen...");
+                await loadAllAvailablePanoramas();
+                
+                // Nach dem Laden aller Panoramen: Kamera auf neuestes Panorama positionieren
+                if (loadedPanoramas.length > 0) {
+                    // Neuestes Panorama finden (basierend auf created_at)
+                    const newestPanorama = loadedPanoramas.reduce((newest, current) => {
+                        const newestTime = new Date(newest.metadata.created_at || 0);
+                        const currentTime = new Date(current.metadata.created_at || 0);
+                        return currentTime > newestTime ? current : newest;
+                    });
+                    
+                    if (newestPanorama && newestPanorama.pointCloudData && newestPanorama.pointCloudData.metadata) {
+                        const gpsPos = newestPanorama.pointCloudData.metadata.gps3DPosition;
+                        console.log("🎯 Positioniere Kamera auf neuestes Panorama:", gpsPos);
+                        
+                        // Kamera mitten in die Point Cloud setzen
+                        camera.position.set(gpsPos.x, gpsPos.y, gpsPos.z);
+                        camera.lookAt(gpsPos.x + 1, gpsPos.y, gpsPos.z); // Leicht nach vorne schauen
+                        controls.target.set(gpsPos.x + 1, gpsPos.y, gpsPos.z);
+                        controls.update();
+                        
+                        console.log("📷 Kamera mitten in der neuesten Point Cloud positioniert");
+                        showStatus("Kamera auf neuestes Panorama ausgerichtet", "success");
+                    }
+                }
+            } catch (error) {
+                console.log("ℹ️  Keine Panoramen verfügbar:", error.message);
+            }
+        }
+
+        // Ersetze die alte autoLoadPanoramas Funktion
+        async function autoLoadPanoramas() {
+            try {
+                console.log("🔄 Lade alle verfügbaren Panoramen...");
+                await loadAllAvailablePanoramas();
+            } catch (error) {
+                console.log("ℹ️  Keine Panoramen verfügbar:", error.message);
+            }
+        }
 
         // Debug-Funktion hinzufügen
         async function debugServerConnection() {
             const serverUrl = window.location.origin;
+            const deviceId = getDeviceId(); // NEU: Device-ID hinzufügen
             console.log("🔍 Debug Server-Verbindung...");
             console.log("📍 Server URL:", serverUrl);
+            console.log("🆔 Device ID:", deviceId); // NEU: Device-ID loggen
             
             try {
-                const metadataUrl = `${serverUrl}/output/panorama_metadata.json`;
-                console.log("🔍 Teste Metadaten-URL:", metadataUrl);
+                // NEU: Erst device-spezifische Metadaten testen
+                const deviceMetadataUrl = `${serverUrl}/output/${deviceId}/panorama_metadata.json`;
+                console.log("🔍 Teste Device-Metadaten-URL:", deviceMetadataUrl);
                 
-                const response = await fetch(metadataUrl);
-                console.log("✅ Response Status:", response.status);
+                const deviceResponse = await fetch(deviceMetadataUrl);
+                console.log("✅ Device Response Status:", deviceResponse.status);
                 
-                if (response.ok) {
-                    const metadata = await response.json();
-                    console.log("📄 Metadaten:", metadata);
+                if (deviceResponse.ok) {
+                    const deviceMetadata = await deviceResponse.json();
+                    console.log("📄 Device-Metadaten:", deviceMetadata);
+                } else {
+                    // Fallback auf globale Metadaten
+                    const metadataUrl = `${serverUrl}/output/panorama_metadata.json`;
+                    console.log("🔍 Teste globale Metadaten-URL:", metadataUrl);
+                    
+                    const response = await fetch(metadataUrl);
+                    console.log("✅ Globale Response Status:", response.status);
+                    
+                    if (response.ok) {
+                        const metadata = await response.json();
+                        console.log("📄 Globale Metadaten:", metadata);
+                    }
                 }
             } catch (error) {
                 console.error("❌ Debug-Fehler:", error);
@@ -1480,10 +2168,21 @@
             // Automatisch Panoramen vom Server laden
             autoLoadPanoramas();
             
+            // NEU: Audio-Visualisierung initialisieren
+            initAudioVisualization();
+            
             // ... restlicher Code ...
         }
 
-        // Video-Aufnahme Funktionen
+        // NEU: Initialisierung beim DOM-Load
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... bestehender Code ...
+            
+            // Audio-Visualisierung sofort anzeigen
+            initAudioVisualization();
+        });
+
+        // Erweiterte Video-Aufnahme mit Audio
         async function initVideoRecording() {
             try {
                 showStatus("Initialisiere Video-Aufnahme...", "processing");
@@ -1503,6 +2202,7 @@
                     throw new Error("Video-Aufnahme wird von diesem Browser nicht unterstützt");
                 }
                 
+                // NEU: Video UND Audio Stream anfordern
                 const stream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         width: { ideal: 1280, max: 1920 },
@@ -1510,7 +2210,7 @@
                         facingMode: 'environment',
                         frameRate: { ideal: 30, max: 60 }
                     },
-                    audio: false
+                    audio: true // NEU: Audio aktivieren
                 });
                 
                 videoStream = stream;
@@ -1542,6 +2242,61 @@
             }
         }
 
+        // NEUE FUNKTION: Dezibel-Messung während der Aufnahme
+        function startDbMeasurement() {
+            if (!videoStream) return;
+            
+            // Audio-Context für Dezibel-Messung erstellen
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const analyser = audioContext.createAnalyser();
+            const microphone = audioContext.createMediaStreamSource(videoStream);
+            
+            analyser.fftSize = 256;
+            microphone.connect(analyser);
+            
+            dbLevels = []; // Array zurücksetzen
+            recordingStartTime = Date.now();
+            
+            dbMeasurementInterval = setInterval(() => {
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+                
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) {
+                    sum += dataArray[i];
+                }
+                const dbLevel = (sum / dataArray.length) / 255;
+                
+                // Zeitstempel und Dezibel-Wert speichern
+                const timestamp = Date.now() - recordingStartTime;
+                dbLevels.push({
+                    timestamp: timestamp,
+                    dbLevel: dbLevel
+                });
+                
+                // Live-Anzeige aktualisieren
+                const dbDisplay = document.getElementById('recording-status');
+                if (dbDisplay) {
+                    const dbPercent = Math.round(dbLevel * 100);
+                    dbDisplay.textContent = `AUFNAHME LÄUFT... 🔊 ${dbPercent}%`;
+                }
+                
+                console.log(`🔊 DB Level: ${dbLevel.toFixed(3)} (${dbPercent}%)`);
+            }, 100); // Alle 100ms messen
+            
+            console.log("🎤 Dezibel-Messung gestartet");
+        }
+
+        // NEUE FUNKTION: Dezibel-Messung stoppen
+        function stopDbMeasurement() {
+            if (dbMeasurementInterval) {
+                clearInterval(dbMeasurementInterval);
+                dbMeasurementInterval = null;
+            }
+            console.log("🎤 Dezibel-Messung gestoppt. Gesammelte Werte:", dbLevels.length);
+        }
+
+        // Erweiterte Video-Aufnahme starten
         function startVideoRecording() {
             if (!videoStream) {
                 showStatus("Kein Video-Stream verfügbar. Bitte initialisieren Sie die Aufnahme zuerst.", "error");
@@ -1550,9 +2305,12 @@
             
             try {
                 recordedChunks = [];
+                audioChunks = []; // NEU: Audio-Chunks zurücksetzen
                 
                 // Unterstützte Codecs für Mobilgeräte prüfen
                 const supportedTypes = [
+                    'video/webm;codecs=vp9,opus',
+                    'video/webm;codecs=vp8,opus',
                     'video/webm;codecs=vp9',
                     'video/webm;codecs=vp8',
                     'video/webm',
@@ -1584,16 +2342,27 @@
                 };
                 
                 mediaRecorder.onstop = () => {
-                    const blob = new Blob(recordedChunks, { type: selectedType });
-                    console.log("Video aufgenommen:", blob.size, "bytes");
+                    const videoBlob = new Blob(recordedChunks, { type: selectedType });
+                    console.log("Video aufgenommen:", videoBlob.size, "bytes");
+                    
+                    // NEU: Audio-Blob aus Video extrahieren
+                    recordedAudioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+                    console.log("Audio extrahiert:", recordedAudioBlob.size, "bytes");
+                    
+                    // NEU: PLAY SOUND Button in der Map anzeigen (nicht im Aufnahmefenster)
+                    document.getElementById('play-audio-btn').style.display = 'inline-block';
+                    
                     showStatus("Video aufgenommen! Bereit zum Upload.", "success");
-                    prepareVideoForUpload(blob);
+                    prepareVideoForUpload(videoBlob);
                 };
                 
                 mediaRecorder.onerror = (event) => {
                     console.error("MediaRecorder Fehler:", event.error);
                     showStatus(`Aufnahme-Fehler: ${event.error.message}`, "error");
                 };
+                
+                // NEU: Dezibel-Messung starten
+                startDbMeasurement();
                 
                 // Aufnahme mit kleineren Chunks für bessere Kompatibilität
                 mediaRecorder.start(1000); // 1 Sekunde Chunks
@@ -1602,7 +2371,7 @@
                 
                 document.getElementById('start-recording-btn').disabled = true;
                 document.getElementById('stop-recording-btn').disabled = false;
-                document.getElementById('recording-status').textContent = "AUFNAHME LÄUFT...";
+                document.getElementById('recording-status').textContent = "AUFNAHME LÄUFT... 🔊 0%";
                 
                 showStatus("Video-Aufnahme gestartet...", "processing");
                 
@@ -1612,13 +2381,18 @@
             }
         }
 
+        // Erweiterte Video-Aufnahme stoppen
         function stopVideoRecording() {
             if (mediaRecorder && isRecording) {
                 mediaRecorder.stop();
                 isRecording = false;
                 
+                // NEU: Dezibel-Messung stoppen
+                stopDbMeasurement();
+                
                 const duration = Date.now() - recordingStartTime;
                 console.log("Aufnahme gestoppt. Dauer:", duration, "ms");
+                console.log("Gesammelte DB-Level:", dbLevels.length);
                 
                 document.getElementById('start-recording-btn').disabled = false;
                 document.getElementById('stop-recording-btn').disabled = true;
@@ -1626,18 +2400,200 @@
             }
         }
 
-        function cancelVideoRecording() {
-            if (mediaRecorder && isRecording) {
-                mediaRecorder.stop();
+        // NEUE FUNKTION: Audio abspielen
+        function playRecordedAudio() {
+            if (!recordedAudioBlob || !dbLevels.length) {
+                showStatus("Kein Audio oder DB-Daten verfügbar", "error");
+                return;
             }
             
-            if (videoStream) {
-                videoStream.getTracks().forEach(track => track.stop());
-                videoStream = null;
+            try {
+                if (isPlayingAudio) {
+                    stopAudioPlayback();
+                    return;
+                }
+                
+                const audioUrl = URL.createObjectURL(recordedAudioBlob);
+                audioPlayer = new Audio(audioUrl);
+                
+                // NEU: Audio-Eigenschaften für mobile Kompatibilität
+                audioPlayer.preload = 'auto';
+                audioPlayer.volume = 1.0;
+                audioPlayer.muted = false;
+                
+                // NEU: Audio-Context für Echtzeit-Analyse
+                currentAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioAnalyser = currentAudioContext.createAnalyser();
+                audioSource = currentAudioContext.createMediaElementSource(audioPlayer);
+                
+                // NEU: Verbindungen herstellen
+                audioSource.connect(audioAnalyser);
+                audioAnalyser.connect(currentAudioContext.destination);
+                
+                audioAnalyser.fftSize = 256;
+                
+                let playbackStartTime = Date.now();
+                let currentDbIndex = 0;
+                
+                // NEU: Zeitbasierte DB-Map für Animation
+                const recordingDuration = dbLevels[dbLevels.length - 1].timestamp - dbLevels[0].timestamp;
+                const timeBasedDbMap = analyzeTimeBasedAudioData(dbLevels, recordingDuration);
+                
+                // NEU: Audio-Event-Listener für bessere Kontrolle
+                audioPlayer.addEventListener('canplaythrough', () => {
+                    console.log("✅ Audio bereit zum Abspielen");
+                });
+                
+                audioPlayer.addEventListener('error', (error) => {
+                    console.error("❌ Audio-Fehler:", error);
+                    // NEU: Keine Status-Anzeige bei Audio-Fehlern
+                });
+                
+                audioPlaybackInterval = setInterval(() => {
+                    const currentTime = Date.now() - playbackStartTime;
+                    
+                    // NEU: Dynamische Animation basierend auf aktueller Zeit
+                    animatePointCloudWithAudio(currentTime, timeBasedDbMap, recordingDuration);
+                    
+                    // Finde den passenden DB-Level für die aktuelle Zeit
+                    while (currentDbIndex < dbLevels.length && 
+                           dbLevels[currentDbIndex].timestamp < currentTime) {
+                        currentDbIndex++;
+                    }
+                    
+                    if (currentDbIndex < dbLevels.length) {
+                        const currentDb = dbLevels[currentDbIndex].dbLevel;
+                        
+                        // NEU: Erweiterte Audio-Animation
+                        if (currentDb > 0.6) {
+                            console.log(` Audio Playback: DB=${currentDb.toFixed(3)}, Zeit=${(currentTime/1000).toFixed(1)}s`);
+                        }
+                    }
+                }, 50);
+                
+                audioPlayer.addEventListener('ended', () => {
+                    stopAudioPlayback();
+                    showStatus("Audio-Wiedergabe beendet", "info");
+                });
+                
+                // NEU: Audio direkt abspielen - KEINE BERECHTIGUNGSANFRAGE
+                audioPlayer.play().then(() => {
+                    isPlayingAudio = true;
+                    showStatus("Audio wird abgespielt...", "success");
+                    console.log("✅ Audio erfolgreich gestartet");
+                }).catch(playError => {
+                    console.error("❌ Audio-Play fehlgeschlagen:", playError);
+                    
+                    // NEU: KEINE Fallback-Mechanismen - einfach ignorieren
+                    console.log("⚠️ Audio-Autoplay blockiert - ignoriere");
+                    
+                    // NEU: Trotzdem Animation starten (ohne Audio)
+                    if (timeBasedDbMap) {
+                        console.log("🎵 Starte Animation ohne Audio...");
+                        startAnimationWithoutAudio(timeBasedDbMap, recordingDuration);
+                    }
+                });
+                
+            } catch (error) {
+                console.error("Audio-Wiedergabe Fehler:", error);
+                // NEU: Keine Status-Anzeige bei Fehlern
+            }
+        }
+
+        // NEUE FUNKTION: Animation ohne Audio
+        function startAnimationWithoutAudio(timeBasedDbMap, recordingDuration) {
+            console.log("🎬 Starte Animation ohne Audio-Playback");
+            
+            let animationStartTime = Date.now();
+            let currentDbIndex = 0;
+            
+            // NEU: Animation-Interval ohne Audio
+            const animationInterval = setInterval(() => {
+                const currentTime = Date.now() - animationStartTime;
+                
+                // NEU: Dynamische Animation basierend auf aktueller Zeit
+                animatePointCloudWithAudio(currentTime, timeBasedDbMap, recordingDuration);
+                
+                // Finde den passenden DB-Level für die aktuelle Zeit
+                while (currentDbIndex < dbLevels.length && 
+                       dbLevels[currentDbIndex].timestamp < currentTime) {
+                    currentDbIndex++;
+                }
+                
+                if (currentDbIndex < dbLevels.length) {
+                    const currentDb = dbLevels[currentDbIndex].dbLevel;
+                    
+                    if (currentDb > 0.6) {
+                        console.log(`🎬 Animation: DB=${currentDb.toFixed(3)}, Zeit=${(currentTime/1000).toFixed(1)}s`);
+                    }
+                }
+                
+                // NEU: Animation stoppen nach Aufnahmedauer
+                if (currentTime >= recordingDuration) {
+                    clearInterval(animationInterval);
+                    console.log("🎬 Animation beendet");
+                    showStatus("Animation beendet", "info");
+                }
+            }, 50);
+            
+            // NEU: Animation-Interval speichern für späteres Stoppen
+            window.animationInterval = animationInterval;
+        }
+
+        // MODIFIZIERTE FUNKTION: Audio-Wiedergabe stoppen (erweitert für Animation)
+        function stopAudioPlayback() {
+            if (audioPlayer) {
+                audioPlayer.pause();
+                audioPlayer = null;
             }
             
-            document.getElementById('video-recording-ui').style.display = 'none';
-            showStatus("Video-Aufnahme abgebrochen", "info");
+            if (audioPlaybackInterval) {
+                clearInterval(audioPlaybackInterval);
+                audioPlaybackInterval = null;
+            }
+            
+            // NEU: Auch Animation-Interval stoppen
+            if (window.animationInterval) {
+                clearInterval(window.animationInterval);
+                window.animationInterval = null;
+            }
+            
+            if (currentAudioContext) {
+                currentAudioContext.close();
+                currentAudioContext = null;
+            }
+            
+            // NEU: Point Clouds zurücksetzen
+            scene.children.forEach(child => {
+                if (child.type === 'Points') {
+                    child.rotation.set(0, 0, 0);
+                    child.scale.setScalar(1.0);
+                    child.position.set(0, 0, 0);
+                }
+            });
+            
+            isPlayingAudio = false;
+            console.log("Audio-Wiedergabe und Animation gestoppt");
+        }
+
+        // NEUE FUNKTION: Depth Map basierend auf Audio animieren
+        function animateDepthMapWithAudio(dbLevel) {
+            // Finde alle Point Clouds in der Szene
+            scene.children.forEach(child => {
+                if (child.type === 'Points' && child.material) {
+                    // DB-Level in Verzerrung umwandeln
+                    // Laut = mehr Verzerrung, Leise = weniger Verzerrung
+                    const distortionFactor = Math.max(0.5, Math.min(2.0, 1.0 + (dbLevel * 2)));
+                    
+                    // Scale basierend auf DB-Level anpassen
+                    child.scale.setScalar(distortionFactor);
+                    
+                    // Zusätzliche Rotation für laute Geräusche
+                    if (dbLevel > 0.7) {
+                        child.rotation.y += 0.01;
+                    }
+                }
+            });
         }
 
         // Neue Funktion: Video Recording UI schließen
@@ -1658,6 +2614,9 @@
                 mediaRecorder.stop();
                 isRecording = false;
             }
+            
+            // NEU: Audio-Visualisierung auf Standard-Position setzen
+            resetAudioVisualization();
             
             // UI-Elemente zurücksetzen
             const startBtn = document.getElementById('start-recording-btn');
@@ -1692,7 +2651,11 @@
                 formData.append('video', videoBlob, 'recorded_video.webm');
                 formData.append('gps_lat', gpsPosition.lat);
                 formData.append('gps_lon', gpsPosition.lon);
-                formData.append('session_id', currentUploadSession.id); // Session-ID mitsenden
+                formData.append('session_id', currentUploadSession.id);
+                
+                // NEUE ZEILEN:
+                const deviceId = getDeviceId();
+                formData.append('device_id', deviceId);
                 
                 showStatus("Lade Video hoch...", "processing");
                 
@@ -1731,13 +2694,27 @@
                     retryCount++;
                     console.log(`Status-Check ${retryCount}/${maxRetries}`);
                     
+                    // NEU: Device-ID verwenden
+                    const deviceId = getDeviceId();
+                    
                     // Direkt die Metadaten-Datei prüfen statt Server-Status
                     const isLocalDevelopment = window.location.protocol === 'file:';
-                    let metadataUrl = isLocalDevelopment ? 
-                        './output/panorama_metadata.json' : 
-                        `${window.location.origin}/output/panorama_metadata.json`;
                     
-                    const metadataResponse = await fetch(metadataUrl);
+                    // NEU: Erst device-spezifische Metadaten prüfen
+                    let metadataUrl = isLocalDevelopment ? 
+                        `./output/${deviceId}/panorama_metadata.json` : 
+                        `${window.location.origin}/output/${deviceId}/panorama_metadata.json`;
+                    
+                    let metadataResponse = await fetch(metadataUrl);
+                    
+                    // NEU: Fallback auf globale Metadaten wenn device-spezifische nicht existiert
+                    if (!metadataResponse.ok) {
+                        console.log("⚠️ Keine device-spezifischen Metadaten, prüfe globale");
+                        metadataUrl = isLocalDevelopment ? 
+                            './output/panorama_metadata.json' : 
+                            `${window.location.origin}/output/panorama_metadata.json`;
+                        metadataResponse = await fetch(metadataUrl);
+                    }
                     
                     if (metadataResponse.ok) {
                         const metadata = await metadataResponse.json();
@@ -1796,6 +2773,7 @@
         // Vereinfachte loadSpecificPanorama Funktion (ohne strenge Validierung)
         async function loadSpecificPanorama(metadata) {
             try {
+                const deviceId = getDeviceId(); // NEU: Device-ID hinzufügen
                 showStatus("Lade neues Panorama...", "processing");
                 
                 console.log("🎯 Lade neues Panorama:", metadata);
@@ -1807,35 +2785,60 @@
                     throw new Error('Keine Depth Map gefunden. Verwende Standard-Point Cloud.');
                 }
                 
+                // NEU: Device-spezifische URLs
                 const panoramaUrl = isLocalDevelopment ? 
-                    `./output/${metadata.panorama_file}` : 
-                    `${window.location.origin}/output/${metadata.panorama_file}`;
+                    `./output/${deviceId}/${metadata.panorama_file}` : 
+                    `${window.location.origin}/output/${deviceId}/${metadata.panorama_file}`;
                     
                 const depthMapFileUrl = isLocalDevelopment ? 
-                    `./output/${depthMapFile.filename}` : 
-                    `${window.location.origin}/output/${depthMapFile.filename}`;
+                    `./output/${deviceId}/${depthMapFile.filename}` : 
+                    `${window.location.origin}/output/${deviceId}/${depthMapFile.filename}`;
                 
                 const [panoramaResponse, depthMapResponse] = await Promise.all([
                     fetch(panoramaUrl),
                     fetch(depthMapFileUrl)
                 ]);
                 
-                if (!panoramaResponse.ok) {
-                    throw new Error(`Panorama-Datei nicht gefunden: ${metadata.panorama_file}`);
+                if (!panoramaResponse.ok || !depthMapResponse.ok) {
+                    // NEU: Fallback auf globale Pfade
+                    console.log("⚠️ Device-spezifische Dateien nicht gefunden, verwende globale");
+                    const globalPanoramaUrl = isLocalDevelopment ? 
+                        `./output/${metadata.panorama_file}` : 
+                        `${window.location.origin}/output/${metadata.panorama_file}`;
+                    const globalDepthMapUrl = isLocalDevelopment ? 
+                        `./output/${depthMapFile.filename}` : 
+                        `${window.location.origin}/output/${depthMapFile.filename}`;
+                    
+                    const [globalPanoramaResponse, globalDepthMapResponse] = await Promise.all([
+                        fetch(globalPanoramaUrl),
+                        fetch(globalDepthMapUrl)
+                    ]);
+                    
+                    if (!globalPanoramaResponse.ok) {
+                        throw new Error(`Panorama-Datei nicht gefunden: ${metadata.panorama_file}`);
+                    }
+                    if (!globalDepthMapResponse.ok) {
+                        throw new Error(`Depth Map nicht gefunden: ${depthMapFile.filename}`);
+                    }
+                    
+                    showStatus("Erstelle 360° Panorama-Sphäre mit Depth Map...", "processing");
+                    
+                    const panoramaBlob = await globalPanoramaResponse.blob();
+                    const depthMapBlob = await globalDepthMapResponse.blob();
+                    const imageUrl = URL.createObjectURL(panoramaBlob);
+                    const depthMapBlobUrl = URL.createObjectURL(depthMapBlob);
+                    
+                    await createPanoramaSphereFromDepthMap(imageUrl, depthMapBlobUrl, metadata);
+                } else {
+                    showStatus("Erstelle 360° Panorama-Sphäre mit Depth Map...", "processing");
+                    
+                    const panoramaBlob = await panoramaResponse.blob();
+                    const depthMapBlob = await depthMapResponse.blob();
+                    const imageUrl = URL.createObjectURL(panoramaBlob);
+                    const depthMapBlobUrl = URL.createObjectURL(depthMapBlob);
+                    
+                    await createPanoramaSphereFromDepthMap(imageUrl, depthMapBlobUrl, metadata);
                 }
-                
-                if (!depthMapResponse.ok) {
-                    throw new Error(`Depth Map nicht gefunden: ${depthMapFile.filename}`);
-                }
-                
-                showStatus("Erstelle 360° Panorama-Sphäre mit Depth Map...", "processing");
-                
-                const panoramaBlob = await panoramaResponse.blob();
-                const depthMapBlob = await depthMapResponse.blob();
-                const imageUrl = URL.createObjectURL(panoramaBlob);
-                const depthMapBlobUrl = URL.createObjectURL(depthMapBlob);
-                
-                await createPanoramaSphereFromDepthMap(imageUrl, depthMapBlobUrl, metadata);
                 
                 showStatus(`Neues 360° Panorama geladen! (${metadata.image_width}x${metadata.image_height})`, "success");
                 
@@ -1898,6 +2901,7 @@
             };
             input.click();
         });
+        document.getElementById('play-audio-btn').addEventListener('click', playRecordedAudio); // NEU
 
         // Neuer Event Listener für alle Panoramen
         document.getElementById('load-all-panoramas-btn').addEventListener('click', loadAllAvailablePanoramas);
@@ -1928,6 +2932,1944 @@
         
         // Beim Laden ausführen
         document.addEventListener('DOMContentLoaded', logBrowserCapabilities);
+
+        function cancelVideoRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+            }
+            
+            // NEU: Dezibel-Messung stoppen falls aktiv
+            stopDbMeasurement();
+            
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            
+            document.getElementById('video-recording-ui').style.display = 'none';
+            showStatus("Video-Aufnahme abgebrochen", "info");
+        }
+
+        // NEUE GLOBALE VARIABLEN für Audio-Analyse
+        let audioAnalysisData = null;
+        let currentPanoramaAudioModifications = null;
+
+        // NEUE FUNKTION: Audio-Daten analysieren (SENSIBLER)
+        function analyzeAudioData(dbLevels) {
+            if (!dbLevels || dbLevels.length === 0) {
+                return null;
+            }
+            
+            // Durchschnittliche Lautstärke berechnen
+            const avgDb = dbLevels.reduce((sum, entry) => sum + entry.dbLevel, 0) / dbLevels.length;
+            
+            // Varianz der Lautstärke berechnen (für Konsistenz)
+            const variance = dbLevels.reduce((sum, entry) => {
+                const diff = entry.dbLevel - avgDb;
+                return sum + (diff * diff);
+            }, 0) / dbLevels.length;
+            
+            // Standardabweichung
+            const stdDev = Math.sqrt(variance);
+            
+            // NEU: SENSIBLERE Konsistenz-Berechnung
+            // Verwende einen kleineren Divisor für empfindlichere Reaktion
+            const consistencyScore = Math.max(0, 1 - (stdDev / (avgDb * 0.3))); // NEU: 0.3 statt 1.0
+            
+            // Normalisierte Werte für die Visualisierung
+            const volumeScore = Math.min(1, avgDb * 2); // 0-1 Skala
+            const consistencyScoreNormalized = consistencyScore; // Bereits 0-1
+            
+            console.log("🎵 Audio-Analyse (SENSIBEL):");
+            console.log("  Durchschnittliche DB:", avgDb.toFixed(3));
+            console.log("  Standardabweichung:", stdDev.toFixed(3));
+            console.log("  Konsistenz-Score:", consistencyScore.toFixed(3));
+            console.log("  Volume-Score:", volumeScore.toFixed(3));
+            
+            return {
+                averageDb: avgDb,
+                standardDeviation: stdDev,
+                consistencyScore: consistencyScore,
+                volumeScore: volumeScore,
+                consistencyScoreNormalized: consistencyScoreNormalized,
+                totalSamples: dbLevels.length
+            };
+        }
+
+        // NEUE FUNKTION: Audio-Visualisierung aktualisieren (IMMER ANZEIGEN)
+        function updateAudioVisualization(analysisData) {
+            const visualization = document.getElementById('audio-visualization');
+            const indicator = document.getElementById('audio-indicator');
+            
+            if (!visualization || !indicator) return;
+            
+            // NEU: Standard-Position wenn keine Audio-Daten
+            let x = 0.5; // Mitte
+            let y = 0.5; // Mitte
+            
+            if (analysisData) {
+                // Position im Koordinatensystem berechnen
+                // X-Achse: Leise (links) -> Laut (rechts)
+                // Y-Achse: Gleich (unten) -> Zerschossen (oben)
+                x = analysisData.volumeScore; // 0-1
+                y = 1 - analysisData.consistencyScoreNormalized; // 0-1 (umgekehrt)
+            }
+            
+            // Position im Kreis berechnen (0-1 zu -1 bis 1)
+            const circleX = (x - 0.5) * 2; // -1 bis 1
+            const circleY = (y - 0.5) * 2; // -1 bis 1
+            
+            // Auf Kreis begrenzen
+            const distance = Math.sqrt(circleX * circleX + circleY * circleY);
+            const clampedX = distance > 1 ? circleX / distance : circleX;
+            const clampedY = distance > 1 ? circleY / distance : circleY;
+            
+            // Position in Pixeln (innerer Kreis = 40px Radius)
+            const pixelX = clampedX * 40;
+            const pixelY = clampedY * 40;
+            
+            // Farbe basierend auf Position
+            const hue = x * 120; // Grün (leise) -> Rot (laut)
+            const saturation = 80 + (y * 20); // 80-100%
+            const lightness = 50 + (y * 20); // 50-70%
+            
+            indicator.style.transform = `translate(calc(-50% + ${pixelX}px), calc(-50% + ${pixelY}px))`;
+            indicator.style.backgroundColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            
+            // NEU: Immer anzeigen
+            visualization.style.display = 'block';
+            
+            if (analysisData) {
+                console.log(`🎯 Audio-Visualisierung: X=${x.toFixed(2)}, Y=${y.toFixed(2)}, Position=(${pixelX.toFixed(1)}, ${pixelY.toFixed(1)})`);
+            } else {
+                console.log(`🎯 Audio-Visualisierung: Standard-Position (keine Audio-Daten)`);
+            }
+        }
+
+        // NEUE FUNKTION: Audio-Visualisierung initialisieren (beim Laden)
+        function initAudioVisualization() {
+            const audioViz = document.getElementById('audio-visualization');
+            if (!audioViz) {
+                console.error("❌ Audio-Visualisierung Element nicht gefunden");
+                return;
+            }
+            
+            // NEU: HTML für das Koordinatensystem erstellen
+            audioViz.innerHTML = `
+                <div id="phenomena-circle">
+                    <div id="audio-indicator"></div>
+                </div>
+                <div id="loud-label" class="phenomenon-label">LAUT</div>
+                <div id="quiet-label" class="phenomenon-label">LEISE</div>
+                <div id="scattered-label" class="phenomenon-label">ABWECHSELND</div>
+                <div id="sorted-label" class="phenomenon-label">GLEICH</div>
+            `;
+            
+            // NEU: Standard-Position anzeigen
+            updateAudioIndicator(null);
+        }
+
+        // NEUE FUNKTION: Audio-Indikator aktualisieren
+        function updateAudioIndicator(audioData) {
+            const indicator = document.getElementById('audio-indicator');
+            if (!indicator) return;
+            
+            if (!audioData) {
+                // NEU: Standard-Position (Mitte)
+                indicator.style.left = '50%';
+                indicator.style.top = '50%';
+                indicator.style.background = '#00ff00';
+                return;
+            }
+            
+            // NEU: Position basierend auf Audio-Daten berechnen
+            const loudness = audioData.averageDb || 0.5;
+            const variation = audioData.dbVariation || 0.5;
+            
+            // NEU: X-Position (Laut/Leise) - links = leise, rechts = laut
+            const xPos = 20 + (loudness * 60); // 20% - 80%
+            
+            // NEU: Y-Position (Abwechselnd/Gleich) - oben = abwechselnd, unten = gleich
+            const yPos = 20 + ((1 - variation) * 60); // 20% - 80%
+            
+            indicator.style.left = xPos + '%';
+            indicator.style.top = yPos + '%';
+            
+            // NEU: Farbe basierend auf Intensität
+            const intensity = Math.max(loudness, variation);
+            const green = Math.round(255 * (1 - intensity));
+            const red = Math.round(255 * intensity);
+            indicator.style.background = `rgb(${red}, ${green}, 0)`;
+            
+            console.log(` Audio-Indikator: X=${xPos.toFixed(1)}%, Y=${yPos.toFixed(1)}%, Intensität=${intensity.toFixed(2)}`);
+        }
+
+        // NEUE FUNKTION: Audio-Visualisierung zurücksetzen (IMMER ANZEIGEN)
+        function resetAudioVisualization() {
+            // NEU: Zeige Standard-Position anstatt zu verstecken
+            updateAudioIndicator(null);
+        }
+
+        // NEUE FUNKTION: Detailfenster öffnen
+        function openAudioDetailWindow() {
+            // NEU: Detailfenster erstellen falls nicht vorhanden
+            let detailWindow = document.getElementById('audio-detail-window');
+            if (!detailWindow) {
+                detailWindow = document.createElement('div');
+                detailWindow.id = 'audio-detail-window';
+                detailWindow.innerHTML = `
+                    <div id="audio-detail-close">×</div>
+                    <div id="parameter-circle">
+                        <div id="large-points-label" class="parameter-label">GROSSE PUNKTE</div>
+                        <div id="small-points-label" class="parameter-label">KLEINE PUNKTE</div>
+                        <div id="strong-distortion-label" class="parameter-label">STARKE VERZERRUNG</div>
+                        <div id="no-distortion-label" class="parameter-label">KEINE VERZERRUNG</div>
+                    </div>
+                `;
+                document.body.appendChild(detailWindow);
+                
+                // NEU: Schließen-Event
+                const closeBtn = document.getElementById('audio-detail-close');
+                closeBtn.addEventListener('click', function() {
+                    detailWindow.style.display = 'none';
+                });
+            }
+            
+            detailWindow.style.display = 'block';
+            initDetailWindowControls();
+        }
+
+        // NEUE FUNKTION: Detailfenster-Steuerung
+        function initDetailWindowControls() {
+            const parameterCircle = document.getElementById('parameter-circle');
+            if (!parameterCircle) return;
+            
+            let isDragging = false;
+            let startAngle = 0;
+            let currentRotation = 0;
+            
+            // NEU: Touch- und Mouse-Events
+            parameterCircle.addEventListener('mousedown', startRotation);
+            parameterCircle.addEventListener('touchstart', startRotation);
+            
+            document.addEventListener('mousemove', handleRotation);
+            document.addEventListener('touchmove', handleRotation);
+            
+            document.addEventListener('mouseup', stopRotation);
+            document.addEventListener('touchend', stopRotation);
+            
+            function startRotation(e) {
+                e.preventDefault();
+                isDragging = true;
+                const rect = parameterCircle.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                
+                startAngle = Math.atan2(clientY - centerY, clientX - centerX);
+            }
+            
+            function handleRotation(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                
+                const rect = parameterCircle.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                
+                const currentAngle = Math.atan2(clientY - centerY, clientX - centerX);
+                const deltaAngle = currentAngle - startAngle;
+                
+                // NEU: Nur Vierteldrehungen (90° Schritte)
+                const targetRotation = Math.round((currentRotation + deltaAngle) / (Math.PI / 2)) * (Math.PI / 2);
+                
+                if (Math.abs(targetRotation - currentRotation) > 0.1) {
+                    currentRotation = targetRotation;
+                    rotateParameterCircle(currentRotation);
+                    updateAudioMapping(currentRotation);
+                }
+            }
+            
+            function stopRotation() {
+                isDragging = false;
+            }
+        }
+
+        // NEUE FUNKTION: Parameter-Kreis rotieren
+        function rotateParameterCircle(angle) {
+            const parameterCircle = document.getElementById('parameter-circle');
+            if (parameterCircle) {
+                parameterCircle.style.transform = `translate(-50%, -50%) rotate(${angle}rad)`;
+            }
+        }
+
+        // NEUE FUNKTION: Audio-Mapping basierend auf Rotation aktualisieren
+        function updateAudioMapping(rotation) {
+            const rotationDegrees = (rotation * 180) / Math.PI;
+            const quarter = Math.round(rotationDegrees / 90) % 4;
+            
+            console.log(` Parameter-Rotation: ${rotationDegrees.toFixed(0)}° (Viertel: ${quarter})`);
+            
+            // NEU: Mapping basierend auf Vierteldrehung
+            switch (quarter) {
+                case 0: // Original
+                    audioMapping = {
+                        loud: 'large_points',
+                        quiet: 'small_points',
+                        scattered: 'strong_distortion',
+                        sorted: 'no_distortion'
+                    };
+                    break;
+                case 1: // 90° gedreht
+                    audioMapping = {
+                        loud: 'small_points',
+                        quiet: 'large_points',
+                        scattered: 'no_distortion',
+                        sorted: 'strong_distortion'
+                    };
+                    break;
+                case 2: // 180° gedreht
+                    audioMapping = {
+                        loud: 'small_points',
+                        quiet: 'large_points',
+                        scattered: 'strong_distortion',
+                        sorted: 'no_distortion'
+                    };
+                    break;
+                case 3: // 270° gedreht
+                    audioMapping = {
+                        loud: 'large_points',
+                        quiet: 'small_points',
+                        scattered: 'no_distortion',
+                        sorted: 'strong_distortion'
+                    };
+                    break;
+            }
+            
+            console.log("🎛️ Neues Audio-Mapping:", audioMapping);
+            
+            // NEU: Sofortige Anwendung auf Panoramen
+            applyAudioMappingToPanoramas();
+        }
+
+        // NEUE FUNKTION: Audio-Mapping auf Panoramen anwenden
+        function applyAudioMappingToPanoramas() {
+            // NEU: Alle aktuellen Point Clouds mit neuen Mapping-Werten neu erstellen
+            scene.children.forEach(child => {
+                if (child.type === 'Points' && child.userData.isAudioModified) {
+                    recreatePointCloudWithNewMapping(child);
+                }
+            });
+        }
+
+        // NEUE FUNKTION: Point Cloud mit neuem Mapping neu erstellen
+        function recreatePointCloudWithNewMapping(pointCloud) {
+            // NEU: Point Cloud mit aktuellem Audio-Mapping neu rendern
+            const audioData = pointCloud.userData.audioData;
+            if (audioData) {
+                // NEU: Neue Parameter basierend auf Mapping anwenden
+                const newParameters = calculateAudioParameters(audioData, audioMapping);
+                applyParametersToPointCloud(pointCloud, newParameters);
+            }
+        }
+
+        // NEUE FUNKTION: Audio-Parameter basierend auf Mapping berechnen
+        function calculateAudioParameters(audioData, mapping) {
+            const loudness = audioData.averageDb || 0.5;
+            const variation = audioData.dbVariation || 0.5;
+            
+            // NEU: Parameter basierend auf Mapping bestimmen
+            let pointSize, distortionStrength;
+            
+            // NEU: Punktgröße basierend auf Laut/Leise
+            if (mapping.loud === 'large_points') {
+                pointSize = 0.5 + (loudness * 1.5); // 0.5 - 2.0
+            } else {
+                pointSize = 0.5 + ((1 - loudness) * 1.5); // 0.5 - 2.0
+            }
+            
+            // NEU: Verzerrung basierend auf Abwechselnd/Gleich
+            if (mapping.scattered === 'strong_distortion') {
+                distortionStrength = 0.5 + (variation * 2.0); // 0.5 - 2.5
+            } else {
+                distortionStrength = 0.5 + ((1 - variation) * 2.0); // 0.5 - 2.5
+            }
+            
+            return { pointSize, distortionStrength };
+        }
+
+        // NEUE FUNKTION: Parameter auf Point Cloud anwenden
+        function applyParametersToPointCloud(pointCloud, parameters) {
+            // NEU: Punktgröße anwenden
+            if (pointCloud.material) {
+                pointCloud.material.size = parameters.pointSize;
+            }
+            
+            // NEU: Verzerrung anwenden (Position der Punkte verändern)
+            if (pointCloud.geometry) {
+                const positions = pointCloud.geometry.attributes.position;
+                if (positions) {
+                    for (let i = 0; i < positions.count; i++) {
+                        const x = positions.getX(i);
+                        const y = positions.getY(i);
+                        const z = positions.getZ(i);
+                        
+                        // NEU: Verzerrung basierend auf Distortion-Strength
+                        const distortion = parameters.distortionStrength;
+                        const newZ = z * distortion;
+                        
+                        positions.setXYZ(i, x, y, newZ);
+                    }
+                    positions.needsUpdate = true;
+                }
+            }
+        }
+
+        // NEUE FUNKTION: Zeitbasierte Audio-Analyse für Depth Map-Verzerrung (NOCH SENSIBLER)
+        function analyzeTimeBasedAudioData(dbLevels, recordingDuration) {
+            if (!dbLevels || dbLevels.length === 0) {
+                return null;
+            }
+            
+            // Zeitbasierte DB-Level-Map erstellen
+            const timeBasedDbMap = [];
+            const timeStep = recordingDuration / dbLevels.length;
+            
+            dbLevels.forEach((entry, index) => {
+                const timestamp = entry.timestamp;
+                const dbLevel = entry.dbLevel;
+                const normalizedTime = timestamp / recordingDuration; // 0-1
+                
+                timeBasedDbMap.push({
+                    time: normalizedTime,
+                    dbLevel: dbLevel,
+                    timestamp: timestamp
+                });
+            });
+            
+            console.log("⏰ Zeitbasierte Audio-Analyse (SENSIBEL):");
+            console.log("  Aufnahmedauer:", recordingDuration, "ms");
+            console.log("  DB-Samples:", dbLevels.length);
+            console.log("  Zeit-Schritte:", timeStep.toFixed(1), "ms");
+            
+            return timeBasedDbMap;
+        }
+
+        // NEUE FUNKTION: DB-Level für spezifische Position in der Depth Map berechnen (NOCH SENSIBLER)
+        function getDbLevelForPosition(x, y, width, height, timeBasedDbMap) {
+            if (!timeBasedDbMap || timeBasedDbMap.length === 0) {
+                return 0.5; // Standard-Wert
+            }
+            
+            // Position in der Depth Map zu Zeitpunkt mappen
+            const normalizedX = x / width; // 0-1
+            const normalizedY = y / height; // 0-1
+            
+            // NEU: NOCH SENSIBLERE Zeitbasierte Mapping-Strategien
+            // 1. Horizontale Position (X) entspricht Zeit
+            const timeIndex = Math.floor(normalizedX * timeBasedDbMap.length);
+            const clampedTimeIndex = Math.max(0, Math.min(timeBasedDbMap.length - 1, timeIndex));
+            
+            // 2. NEU: SENSIBLERE vertikale Variation
+            const verticalVariation = Math.sin(normalizedY * Math.PI * 4) * 0.2; // ±20% Variation (verdoppelt)
+            
+            // 3. Interpolation zwischen benachbarten Zeitpunkten
+            let dbLevel = timeBasedDbMap[clampedTimeIndex].dbLevel;
+            
+            if (clampedTimeIndex < timeBasedDbMap.length - 1) {
+                const nextDbLevel = timeBasedDbMap[clampedTimeIndex + 1].dbLevel;
+                const interpolationFactor = (normalizedX * timeBasedDbMap.length) - clampedTimeIndex;
+                dbLevel = dbLevel + (nextDbLevel - dbLevel) * interpolationFactor;
+            }
+            
+            // NEU: SENSIBLERE vertikale Variation hinzufügen
+            dbLevel += verticalVariation;
+            dbLevel = Math.max(0, Math.min(1, dbLevel)); // Auf 0-1 begrenzen
+            
+            return dbLevel;
+        }
+
+        // NEUE FUNKTION: Dynamische Animation basierend auf Audio-Playback
+        function animatePointCloudWithAudio(currentTime, timeBasedDbMap, recordingDuration) {
+            if (!timeBasedDbMap || !recordingDuration) return;
+            
+            // Normalisierte Zeit (0-1)
+            const normalizedTime = (currentTime % recordingDuration) / recordingDuration;
+            
+            // Finde den aktuellen DB-Level für diese Zeit
+            const timeIndex = Math.floor(normalizedTime * timeBasedDbMap.length);
+            const clampedTimeIndex = Math.max(0, Math.min(timeBasedDbMap.length - 1, timeIndex));
+            const currentDbLevel = timeBasedDbMap[clampedTimeIndex].dbLevel;
+            
+            // NEU: Dynamische Animation für alle Point Clouds
+            scene.children.forEach(child => {
+                if (child.type === 'Points' && child.material) {
+                    // NEU: Bewegung basierend auf DB-Level
+                    const movementIntensity = currentDbLevel * 3.0; // 0-3x Bewegung
+                    
+                    // NEU: Verschiedene Bewegungsarten basierend auf DB-Level
+                    if (currentDbLevel > 0.7) {
+                        // LAUT: Starke Rotation und Skalierung
+                        child.rotation.y += 0.02 * movementIntensity;
+                        child.rotation.x += 0.01 * movementIntensity;
+                        
+                        // Pulsierende Skalierung
+                        const pulseScale = 1.0 + Math.sin(Date.now() * 0.01) * 0.2 * movementIntensity;
+                        child.scale.setScalar(pulseScale);
+                        
+                    } else if (currentDbLevel > 0.4) {
+                        // MITTEL: Moderate Rotation
+                        child.rotation.y += 0.01 * movementIntensity;
+                        
+                        // Sanfte Skalierung
+                        const gentleScale = 1.0 + Math.sin(Date.now() * 0.005) * 0.1 * movementIntensity;
+                        child.scale.setScalar(gentleScale);
+                        
+                    } else {
+                        // LEISE: Minimale Bewegung
+                        child.rotation.y += 0.001 * movementIntensity;
+                        child.scale.setScalar(1.0);
+                    }
+                    
+                    // NEU: Position-Bewegung für sehr laute Bereiche
+                    if (currentDbLevel > 0.8) {
+                        const wobbleX = Math.sin(Date.now() * 0.02) * 0.5 * movementIntensity;
+                        const wobbleY = Math.cos(Date.now() * 0.015) * 0.3 * movementIntensity;
+                        child.position.x += wobbleX * 0.01;
+                        child.position.y += wobbleY * 0.01;
+                    }
+                }
+            });
+            
+            // Debug-Ausgabe für laute Bereiche
+            if (currentDbLevel > 0.6) {
+                console.log(`🎵 Audio-Animation: DB=${currentDbLevel.toFixed(2)}, Bewegung=${movementIntensity.toFixed(2)}x`);
+            }
+        }
+
+        // MODIFIZIERTE FUNKTION: Panorama-Sphäre mit NOCH SENSIBLERER Audio-Verzerrung
+        async function createPanoramaSphereFromDepthMap(imageUrl, depthMapUrl, metadata) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const depthImg = new Image();
+                img.crossOrigin = "anonymous";
+                depthImg.crossOrigin = "anonymous";
+                
+                let imageLoaded = false;
+                let depthLoaded = false;
+                
+                const checkBothLoaded = () => {
+                    if (imageLoaded && depthLoaded) {
+                        createSpherePointCloud();
+                    }
+                };
+                
+                img.onload = () => {
+                    imageLoaded = true;
+                    checkBothLoaded();
+                };
+                
+                depthImg.onload = () => {
+                    depthLoaded = true;
+                    checkBothLoaded();
+                };
+                
+                img.onerror = () => reject(new Error("Konnte Panorama-Bild nicht laden"));
+                depthImg.onerror = () => reject(new Error("Konnte Depth Map nicht laden"));
+                
+                img.src = imageUrl;
+                depthImg.src = depthMapUrl;
+                
+                function createSpherePointCloud() {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        
+                        ctx.drawImage(img, 0, 0);
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        
+                        ctx.drawImage(depthImg, 0, 0);
+                        const depthData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        
+                        const gpsCoords = metadata.gps_coordinates;
+                        const gps3DPosition = geoTo3D(gpsCoords.lat, gpsCoords.lon);
+                        
+                        const width = canvas.width;
+                        const height = canvas.height;
+                        const numPoints = width * height;
+                        const positions = new Float32Array(numPoints * 3);
+                        const colors = new Float32Array(numPoints * 3);
+                        
+                        // NEU: Zeitbasierte Audio-Analyse
+                        let timeBasedDbMap = null;
+                        let recordingDuration = 0;
+                        
+                        if (dbLevels && dbLevels.length > 0) {
+                            // Aufnahmedauer berechnen
+                            const firstTimestamp = dbLevels[0].timestamp;
+                            const lastTimestamp = dbLevels[dbLevels.length - 1].timestamp;
+                            recordingDuration = lastTimestamp - firstTimestamp;
+                            
+                            timeBasedDbMap = analyzeTimeBasedAudioData(dbLevels, recordingDuration);
+                            console.log("⏰ Zeitbasierte DB-Map erstellt:", timeBasedDbMap.length, "Einträge");
+                            
+                            // Audio-Visualisierung aktualisieren
+                            const audioAnalysis = analyzeAudioData(dbLevels);
+                            updateAudioVisualization(audioAnalysis);
+                        }
+                        
+                        // NEU: Audio-basierte Modifikationen (NOCH SENSIBLER)
+                        let baseRadius = 25.0;
+                        let baseDepthInfluence = 8.0;
+                        let pointSizeMultiplier = 1.0;
+                        
+                        // Bestehende Stitching-Statistiken
+                        if (metadata.stitching_stats) {
+                            const successfulFrames = metadata.stitching_stats.successful_frames;
+                            const frameSteps = Math.floor(successfulFrames / 5);
+                            baseRadius = Math.max(10.0, Math.min(50.0, 10.0 + (frameSteps * 5)));
+                            baseDepthInfluence = Math.max(4.0, Math.min(16.0, 4.0 + (frameSteps * 2)));
+                            
+                            console.log(` Stitching + Audio: Radius=${baseRadius.toFixed(1)}, BaseDepth=${baseDepthInfluence.toFixed(1)}`);
+                        }
+                        
+                        let pointIndex = 0;
+                        const progressInterval = Math.max(1, Math.floor(numPoints / 10));
+                        
+                        for (let y = 0; y < height; y++) {
+                            for (let x = 0; x < width; x++) {
+                                const pixelIndex = (y * width + x) * 4;
+                                
+                                const u = (x / width) * 2 * Math.PI;
+                                const v = (y / height) * Math.PI;
+                                
+                                const r = imageData.data[pixelIndex] / 255;
+                                const g = imageData.data[pixelIndex + 1] / 255;
+                                const b = imageData.data[pixelIndex + 2] / 255;
+                                
+                                const originalDepth = depthData.data[pixelIndex] / 255;
+                                
+                                // NEU: NOCH SENSIBLERE zeitbasierte DB-Level für diese Position
+                                let dbLevel = 0.5; // Standard-Wert
+                                let depthInfluence = baseDepthInfluence;
+                                
+                                if (timeBasedDbMap) {
+                                    dbLevel = getDbLevelForPosition(x, y, width, height, timeBasedDbMap);
+                                    
+                                    // NEU: NOCH SENSIBLERE dynamische Depth-Influence
+                                    // Laut = viel mehr Verzerrung, Leise = viel weniger Verzerrung
+                                    const dbMultiplier = 0.1 + (dbLevel * 4.9); // 0.1-5.0 statt 0.3-3.0
+                                    depthInfluence = baseDepthInfluence * dbMultiplier;
+                                    
+                                    // Debug für erste paar Punkte
+                                    if (pointIndex < 10) {
+                                        console.log(` Punkt ${pointIndex}: X=${x}, Y=${y}, DB=${dbLevel.toFixed(3)}, DepthMult=${dbMultiplier.toFixed(2)}`);
+                                    }
+                                }
+                                
+                                // NEU: NOCH SENSIBLERE verzerrte Depth basierend auf DB-Level
+                                const distortedDepth = originalDepth * (1 + (dbLevel - 0.5) * 4); // -2 bis +2 Verzerrung statt -1 bis +1
+                                const clampedDepth = Math.max(0, Math.min(1, distortedDepth));
+                                
+                                const depthRadius = baseRadius + (clampedDepth * depthInfluence);
+                                
+                                const sphereX = depthRadius * Math.sin(v) * Math.cos(u);
+                                const sphereY = depthRadius * Math.cos(v);
+                                const sphereZ = depthRadius * Math.sin(v) * Math.sin(u);
+                                
+                                positions[pointIndex * 3] = gps3DPosition.x + sphereX;
+                                positions[pointIndex * 3 + 1] = gps3DPosition.y + sphereY;
+                                positions[pointIndex * 3 + 2] = gps3DPosition.z + sphereZ;
+                                
+                                colors[pointIndex * 3] = r;
+                                colors[pointIndex * 3 + 1] = g;
+                                colors[pointIndex * 3 + 2] = b;
+                                
+                                pointIndex++;
+                                
+                                if (pointIndex % progressInterval === 0) {
+                                    const progress = Math.round((pointIndex / numPoints) * 100);
+                                    showStatus(`Sphäre-Generierung: ${progress}%`, 'processing');
+                                }
+                            }
+                        }
+                        
+                        const pointCloudData = {
+                            positions: positions,
+                            colors: colors,
+                            count: numPoints,
+                            metadata: {
+                                ...metadata,
+                                type: 'panorama_sphere',
+                                baseRadius: baseRadius,
+                                baseDepthInfluence: baseDepthInfluence,
+                                gps3DPosition: gps3DPosition,
+                                timeBasedDbMap: timeBasedDbMap, // NEU: Zeitbasierte DB-Map
+                                recordingDuration: recordingDuration, // NEU: Aufnahmedauer
+                                pointSizeMultiplier: pointSizeMultiplier
+                            }
+                        };
+                        
+                        // NEU: Audio-Modifikationen für aktuelle Point Cloud speichern
+                        currentPanoramaAudioModifications = {
+                            pointSizeMultiplier: pointSizeMultiplier,
+                            timeBasedDbMap: timeBasedDbMap,
+                            recordingDuration: recordingDuration
+                        };
+                        
+                        createPointCloudInScene(pointCloudData, { x: 0, y: 0, z: 0 });
+                        
+                        loadedPanoramas.push({
+                            metadata: metadata,
+                            pointCloudData: pointCloudData,
+                            imageUrl: imageUrl,
+                            depthMapUrl: depthMapUrl,
+                            type: 'sphere',
+                            timeBasedDbMap: timeBasedDbMap // NEU: Zeitbasierte DB-Map
+                        });
+                        
+                        console.log("✅ 360° Panorama-Sphäre mit SENSIBLERER Audio-Verzerrung erstellt");
+                        console.log(" Sphäre-Position:", gps3DPosition);
+                        console.log("🔵 Sphäre-Radius:", baseRadius);
+                        if (timeBasedDbMap) {
+                            console.log("⏰ SENSIBLERE zeitbasierte Audio-Verzerrung angewendet");
+                        }
+                        resolve();
+                        
+                    } catch (error) {
+                        reject(error);
+                    }
+                }
+            });
+        }
+
+        // MODIFIZIERTE FUNKTION: Audio abspielen mit dynamischer Animation
+        function playRecordedAudio() {
+            if (!recordedAudioBlob || !dbLevels.length) {
+                showStatus("Kein Audio oder DB-Daten verfügbar", "error");
+                return;
+            }
+            
+            try {
+                if (isPlayingAudio) {
+                    stopAudioPlayback();
+                    return;
+                }
+                
+                const audioUrl = URL.createObjectURL(recordedAudioBlob);
+                audioPlayer = new Audio(audioUrl);
+                
+                // NEU: Audio-Eigenschaften für mobile Kompatibilität
+                audioPlayer.preload = 'auto';
+                audioPlayer.volume = 1.0;
+                audioPlayer.muted = false;
+                
+                // NEU: Audio-Context für Echtzeit-Analyse
+                currentAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioAnalyser = currentAudioContext.createAnalyser();
+                audioSource = currentAudioContext.createMediaElementSource(audioPlayer);
+                
+                // NEU: Verbindungen herstellen
+                audioSource.connect(audioAnalyser);
+                audioAnalyser.connect(currentAudioContext.destination);
+                
+                audioAnalyser.fftSize = 256;
+                
+                let playbackStartTime = Date.now();
+                let currentDbIndex = 0;
+                
+                // NEU: Zeitbasierte DB-Map für Animation
+                const recordingDuration = dbLevels[dbLevels.length - 1].timestamp - dbLevels[0].timestamp;
+                const timeBasedDbMap = analyzeTimeBasedAudioData(dbLevels, recordingDuration);
+                
+                // NEU: Audio-Event-Listener für bessere Kontrolle
+                audioPlayer.addEventListener('canplaythrough', () => {
+                    console.log("✅ Audio bereit zum Abspielen");
+                });
+                
+                audioPlayer.addEventListener('error', (error) => {
+                    console.error("❌ Audio-Fehler:", error);
+                    // NEU: Keine Status-Anzeige bei Audio-Fehlern
+                });
+                
+                audioPlaybackInterval = setInterval(() => {
+                    const currentTime = Date.now() - playbackStartTime;
+                    
+                    // NEU: Dynamische Animation basierend auf aktueller Zeit
+                    animatePointCloudWithAudio(currentTime, timeBasedDbMap, recordingDuration);
+                    
+                    // Finde den passenden DB-Level für die aktuelle Zeit
+                    while (currentDbIndex < dbLevels.length && 
+                           dbLevels[currentDbIndex].timestamp < currentTime) {
+                        currentDbIndex++;
+                    }
+                    
+                    if (currentDbIndex < dbLevels.length) {
+                        const currentDb = dbLevels[currentDbIndex].dbLevel;
+                        
+                        // NEU: Erweiterte Audio-Animation
+                        if (currentDb > 0.6) {
+                            console.log(` Audio Playback: DB=${currentDb.toFixed(3)}, Zeit=${(currentTime/1000).toFixed(1)}s`);
+                        }
+                    }
+                }, 50);
+                
+                audioPlayer.addEventListener('ended', () => {
+                    stopAudioPlayback();
+                    showStatus("Audio-Wiedergabe beendet", "info");
+                });
+                
+                // NEU: Audio direkt abspielen - KEINE BERECHTIGUNGSANFRAGE
+                audioPlayer.play().then(() => {
+                    isPlayingAudio = true;
+                    showStatus("Audio wird abgespielt...", "success");
+                    console.log("✅ Audio erfolgreich gestartet");
+                }).catch(playError => {
+                    console.error("❌ Audio-Play fehlgeschlagen:", playError);
+                    
+                    // NEU: KEINE Fallback-Mechanismen - einfach ignorieren
+                    console.log("⚠️ Audio-Autoplay blockiert - ignoriere");
+                    
+                    // NEU: Trotzdem Animation starten (ohne Audio)
+                    if (timeBasedDbMap) {
+                        console.log("🎵 Starte Animation ohne Audio...");
+                        startAnimationWithoutAudio(timeBasedDbMap, recordingDuration);
+                    }
+                });
+                
+            } catch (error) {
+                console.error("Audio-Wiedergabe Fehler:", error);
+                // NEU: Keine Status-Anzeige bei Fehlern
+            }
+        }
+
+        // NEUE FUNKTION: Animation ohne Audio
+        function startAnimationWithoutAudio(timeBasedDbMap, recordingDuration) {
+            console.log("🎬 Starte Animation ohne Audio-Playback");
+            
+            let animationStartTime = Date.now();
+            let currentDbIndex = 0;
+            
+            // NEU: Animation-Interval ohne Audio
+            const animationInterval = setInterval(() => {
+                const currentTime = Date.now() - animationStartTime;
+                
+                // NEU: Dynamische Animation basierend auf aktueller Zeit
+                animatePointCloudWithAudio(currentTime, timeBasedDbMap, recordingDuration);
+                
+                // Finde den passenden DB-Level für die aktuelle Zeit
+                while (currentDbIndex < dbLevels.length && 
+                       dbLevels[currentDbIndex].timestamp < currentTime) {
+                    currentDbIndex++;
+                }
+                
+                if (currentDbIndex < dbLevels.length) {
+                    const currentDb = dbLevels[currentDbIndex].dbLevel;
+                    
+                    if (currentDb > 0.6) {
+                        console.log(`🎬 Animation: DB=${currentDb.toFixed(3)}, Zeit=${(currentTime/1000).toFixed(1)}s`);
+                    }
+                }
+                
+                // NEU: Animation stoppen nach Aufnahmedauer
+                if (currentTime >= recordingDuration) {
+                    clearInterval(animationInterval);
+                    console.log("🎬 Animation beendet");
+                    showStatus("Animation beendet", "info");
+                }
+            }, 50);
+            
+            // NEU: Animation-Interval speichern für späteres Stoppen
+            window.animationInterval = animationInterval;
+        }
+
+        // MODIFIZIERTE FUNKTION: Audio-Wiedergabe stoppen (erweitert für Animation)
+        function stopAudioPlayback() {
+            if (audioPlayer) {
+                audioPlayer.pause();
+                audioPlayer = null;
+            }
+            
+            if (audioPlaybackInterval) {
+                clearInterval(audioPlaybackInterval);
+                audioPlaybackInterval = null;
+            }
+            
+            // NEU: Auch Animation-Interval stoppen
+            if (window.animationInterval) {
+                clearInterval(window.animationInterval);
+                window.animationInterval = null;
+            }
+            
+            if (currentAudioContext) {
+                currentAudioContext.close();
+                currentAudioContext = null;
+            }
+            
+            // NEU: Point Clouds zurücksetzen
+            scene.children.forEach(child => {
+                if (child.type === 'Points') {
+                    child.rotation.set(0, 0, 0);
+                    child.scale.setScalar(1.0);
+                    child.position.set(0, 0, 0);
+                }
+            });
+            
+            isPlayingAudio = false;
+            console.log("Audio-Wiedergabe und Animation gestoppt");
+        }
+
+        // MODIFIZIERTE FUNKTION: Audio-Context sicher erstellen (vereinfacht)
+        function createSafeAudioContext() {
+            try {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                const audioContext = new AudioContextClass();
+                
+                // NEU: Resume Audio-Context falls suspended
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume().then(() => {
+                        console.log("✅ Audio-Context erfolgreich resumed");
+                    }).catch(error => {
+                        console.error("❌ Audio-Context resume fehlgeschlagen:", error);
+                    });
+                }
+                
+                return audioContext;
+            } catch (error) {
+                console.error("❌ Audio-Context Erstellung fehlgeschlagen:", error);
+                return null;
+            }
+        }
+
+        // MODIFIZIERTE FUNKTION: Mobile Audio-Initialisierung (vereinfacht)
+        async function initMobileAudio() {
+            console.log("📱 Initialisiere Mobile Audio...");
+            
+            // NEU: Prüfe ob es ein mobiles Gerät ist
+            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            console.log("📱 Ist mobiles Gerät:", isMobile);
+            
+            if (isMobile) {
+                // NEU: Mobile-spezifische Audio-Einstellungen
+                console.log("📱 Verwende mobile Audio-Einstellungen");
+                
+                // NEU: Audio-Context mit mobile-spezifischen Optionen
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    try {
+                        // NEU: Audio-Context mit mobile-optimierten Einstellungen
+                        currentAudioContext = new AudioContextClass({
+                            latencyHint: 'interactive',
+                            sampleRate: 44100
+                        });
+                        
+                        console.log("✅ Mobile Audio-Context erstellt");
+                        
+                    } catch (error) {
+                        console.error("❌ Mobile Audio-Context Erstellung fehlgeschlagen:", error);
+                    }
+                }
+            }
+        }
+
+        // NEUE FUNKTION: Audio-Test für mobile Geräte
+        function testMobileAudio() {
+            console.log(" Teste mobile Audio-Kompatibilität...");
+            console.log("User Agent:", navigator.userAgent);
+            console.log("Audio-Context verfügbar:", !!(window.AudioContext || window.webkitAudioContext));
+            console.log("MediaDevices verfügbar:", !!navigator.mediaDevices);
+            
+            // NEU: Prüfe Audio-Autoplay-Policy
+            const audio = new Audio();
+            audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT';
+            audio.volume = 0;
+            
+            audio.play().then(() => {
+                console.log("✅ Audio-Autoplay funktioniert");
+            }).catch(error => {
+                console.log("⚠️ Audio-Autoplay blockiert:", error.name);
+            });
+        }
+
+        // NEUE FUNKTION: Audio-Status anzeigen
+        function showAudioStatus() {
+            const statusDiv = document.createElement('div');
+            statusDiv.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                z-index: 10000;
+                text-align: center;
+                font-size: 16px;
+            `;
+            
+            statusDiv.innerHTML = `
+                <h3>Audio-Status</h3>
+                <p>Audio-Context: ${currentAudioContext ? currentAudioContext.state : 'Nicht erstellt'}</p>
+                <p>Audio-Player: ${audioPlayer ? 'Erstellt' : 'Nicht erstellt'}</p>
+                <p>Ist Abspielend: ${isPlayingAudio ? 'Ja' : 'Nein'}</p>
+                <p>DB-Levels: ${dbLevels ? dbLevels.length : 0}</p>
+                <button onclick="this.parentElement.remove()" style="margin-top: 10px; padding: 5px 10px;">Schließen</button>
+            `;
+            
+            document.body.appendChild(statusDiv);
+        }
+
+        // NEUE FUNKTION: Audio-Problem beheben
+        function fixAudioIssues() {
+            console.log("🔧 Behebe Audio-Probleme...");
+            
+            // NEU: Audio-Context zurücksetzen
+            if (currentAudioContext) {
+                currentAudioContext.close();
+                currentAudioContext = null;
+            }
+            
+            // NEU: Audio-Player zurücksetzen
+            if (audioPlayer) {
+                audioPlayer.pause();
+                audioPlayer = null;
+            }
+            
+            // NEU: Interval zurücksetzen
+            if (audioPlaybackInterval) {
+                clearInterval(audioPlaybackInterval);
+                audioPlaybackInterval = null;
+            }
+            
+            isPlayingAudio = false;
+            
+            showStatus("Audio-System zurückgesetzt. Versuche es nochmal.", "info");
+        }
+
+        // MODIFIZIERTE FUNKTION: Event Listeners für neue Buttons
+        document.getElementById('play-audio-btn').addEventListener('click', playRecordedAudio);
+
+        // NEUE BUTTONS für Audio-Debugging (optional)
+        // Füge diese Buttons zur UI hinzu für Debugging:
+        /*
+        <button class="btn" onclick="testMobileAudio()">AUDIO TEST</button>
+        <button class="btn" onclick="showAudioStatus()">AUDIO STATUS</button>
+        <button class="btn" onclick="fixAudioIssues()">AUDIO RESET</button>
+        */
+
+        // NEU: Audio-Test beim Laden
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... bestehender Code ...
+            
+            // Audio-Test für mobile Geräte
+            testMobileAudio();
+        });
+
+        // NEUE FUNKTION: Browser-Berechtigungen prüfen und anfordern
+        async function checkAndRequestAudioPermissions() {
+            console.log("🔐 Prüfe Audio-Berechtigungen...");
+            
+            try {
+                // NEU: Prüfe ob Audio-Context verfügbar ist
+                if (!(window.AudioContext || window.webkitAudioContext)) {
+                    throw new Error("Audio-Context wird von diesem Browser nicht unterstützt");
+                }
+                
+                // NEU: Prüfe MediaDevices-Berechtigung
+                if (!navigator.mediaDevices) {
+                    throw new Error("MediaDevices werden von diesem Browser nicht unterstützt");
+                }
+                
+                // NEU: Prüfe Audio-Autoplay-Policy
+                const audio = new Audio();
+                audio.src = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT';
+                audio.volume = 0;
+                
+                try {
+                    await audio.play();
+                    console.log("✅ Audio-Autoplay funktioniert");
+                } catch (autoplayError) {
+                    console.log("⚠️ Audio-Autoplay blockiert:", autoplayError.name);
+                    showStatus("Audio-Autoplay blockiert. Tippe auf den Bildschirm zum Starten.", "info");
+                }
+                
+                return true;
+                
+            } catch (error) {
+                console.error("❌ Audio-Berechtigungsfehler:", error);
+                showStatus(`Audio-Berechtigung: ${error.message}`, "error");
+                return false;
+            }
+        }
+
+        // NEUE FUNKTION: Mobile-spezifische Audio-Initialisierung
+        async function initMobileAudio() {
+            console.log("📱 Initialisiere Mobile Audio...");
+            
+            // NEU: Prüfe ob es ein mobiles Gerät ist
+            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            console.log("📱 Ist mobiles Gerät:", isMobile);
+            
+            if (isMobile) {
+                // NEU: Mobile-spezifische Audio-Einstellungen
+                console.log("📱 Verwende mobile Audio-Einstellungen");
+                
+                // NEU: Audio-Context mit mobile-spezifischen Optionen
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) {
+                    try {
+                        // NEU: Audio-Context mit mobile-optimierten Einstellungen
+                        currentAudioContext = new AudioContextClass({
+                            latencyHint: 'interactive',
+                            sampleRate: 44100
+                        });
+                        
+                        console.log("✅ Mobile Audio-Context erstellt");
+                        
+                    } catch (error) {
+                        console.error("❌ Mobile Audio-Context Erstellung fehlgeschlagen:", error);
+                    }
+                }
+            }
+        }
+
+        // NEUE FUNKTION: Audio mit expliziter User-Interaction starten
+        async function startAudioWithExplicitPermission() {
+            console.log("🎵 Starte Audio mit expliziter Berechtigung...");
+            
+            // NEU: Zeige Berechtigungsanfrage
+            const permissionDialog = document.createElement('div');
+            permissionDialog.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+            
+            permissionDialog.innerHTML = `
+                <div style="background: rgba(0, 0, 0, 0.8); color: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 300px;">
+                    <h3> Audio-Berechtigung</h3>
+                    <p>Um den Sound abzuspielen, müssen Sie die Audio-Berechtigung erlauben.</p>
+                    <p style="font-size: 12px; margin-top: 10px;">Tippen Sie auf "Audio starten" um fortzufahren.</p>
+                    <button id="start-audio-btn" style="
+                        background: #4CAF50;
+                        color: white;
+                        border: none;
+                        padding: 15px 30px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        margin-top: 20px;
+                        cursor: pointer;
+                    ">AUDIO STARTEN</button>
+                    <button id="cancel-audio-btn" style="
+                        background: #f44336;
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        font-size: 14px;
+                        margin-top: 10px;
+                        cursor: pointer;
+                    ">ABBRECHEN</button>
+                </div>
+            `;
+            
+            document.body.appendChild(permissionDialog);
+            
+            // NEU: Event-Listener für Buttons
+            document.getElementById('start-audio-btn').addEventListener('click', async () => {
+                try {
+                    // NEU: Audio-Context sicherstellen
+                    if (!currentAudioContext || currentAudioContext.state === 'suspended') {
+                        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                        currentAudioContext = new AudioContextClass();
+                        await currentAudioContext.resume();
+                    }
+                    
+                    // NEU: Audio-Playback starten
+                    await playRecordedAudioWithContext(currentAudioContext);
+                    
+                    // NEU: Dialog schließen
+                    permissionDialog.remove();
+                    
+                } catch (error) {
+                    console.error("❌ Audio-Start fehlgeschlagen:", error);
+                    showStatus(`Audio-Start Fehler: ${error.message}`, "error");
+                    permissionDialog.remove();
+                }
+            });
+            
+            document.getElementById('cancel-audio-btn').addEventListener('click', () => {
+                permissionDialog.remove();
+                showStatus("Audio-Start abgebrochen", "info");
+            });
+        }
+
+        // MODIFIZIERTE FUNKTION: Audio abspielen (mit expliziter Berechtigung)
+        function playRecordedAudio() {
+            // NEU: Prüfe Berechtigungen und starte mit expliziter User-Interaction
+            checkAndRequestAudioPermissions().then(hasPermissions => {
+                if (hasPermissions) {
+                    startAudioWithExplicitPermission();
+                } else {
+                    showStatus("Audio-Berechtigungen nicht verfügbar", "error");
+                }
+            });
+        }
+
+        // NEUE FUNKTION: Browser-spezifische Audio-Fixes
+        function applyBrowserSpecificAudioFixes() {
+            const userAgent = navigator.userAgent;
+            console.log("🌐 Browser:", userAgent);
+            
+            // NEU: Safari-spezifische Fixes
+            if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+                console.log(" Safari-spezifische Audio-Fixes anwenden...");
+                
+                // NEU: Safari benötigt oft explizite User-Interaction
+                const safariAudioFix = () => {
+                    if (currentAudioContext && currentAudioContext.state === 'suspended') {
+                        currentAudioContext.resume();
+                    }
+                };
+                
+                document.addEventListener('touchstart', safariAudioFix, { once: true });
+                document.addEventListener('click', safariAudioFix, { once: true });
+            }
+            
+            // NEU: Chrome Mobile-spezifische Fixes
+            if (userAgent.includes('Chrome') && /Android|iPhone|iPad/i.test(userAgent)) {
+                console.log(" Chrome Mobile-spezifische Audio-Fixes anwenden...");
+                
+                // NEU: Chrome Mobile benötigt oft mehrere User-Interactions
+                let interactionCount = 0;
+                const chromeMobileFix = () => {
+                    interactionCount++;
+                    if (currentAudioContext && currentAudioContext.state === 'suspended') {
+                        currentAudioContext.resume();
+                    }
+                    if (interactionCount >= 2) {
+                        document.removeEventListener('touchstart', chromeMobileFix);
+                        document.removeEventListener('click', chromeMobileFix);
+                    }
+                };
+                
+                document.addEventListener('touchstart', chromeMobileFix);
+                document.addEventListener('click', chromeMobileFix);
+            }
+        }
+
+        // NEUE FUNKTION: Audio-Status-Diagnose
+        function diagnoseAudioIssues() {
+            const diagnosis = {
+                userAgent: navigator.userAgent,
+                isMobile: /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+                audioContextSupported: !!(window.AudioContext || window.webkitAudioContext),
+                mediaDevicesSupported: !!navigator.mediaDevices,
+                audioContextState: currentAudioContext ? currentAudioContext.state : 'Nicht erstellt',
+                audioPlayerExists: !!audioPlayer,
+                isPlaying: isPlayingAudio,
+                dbLevelsCount: dbLevels ? dbLevels.length : 0,
+                recordedAudioExists: !!recordedAudioBlob
+            };
+            
+            console.log("🔍 Audio-Diagnose:", diagnosis);
+            
+            // NEU: Zeige Diagnose in UI
+            const diagnosisDialog = document.createElement('div');
+            diagnosisDialog.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 20px;
+                border-radius: 10px;
+                z-index: 10000;
+                max-width: 400px;
+                max-height: 80vh;
+                overflow-y: auto;
+            `;
+            
+            diagnosisDialog.innerHTML = `
+                <h3> Audio-Diagnose</h3>
+                <div style="font-size: 12px; line-height: 1.4;">
+                    <p><strong>Mobil:</strong> ${diagnosis.isMobile ? 'Ja' : 'Nein'}</p>
+                    <p><strong>Audio-Context:</strong> ${diagnosis.audioContextSupported ? 'Unterstützt' : 'Nicht unterstützt'}</p>
+                    <p><strong>Audio-Context Status:</strong> ${diagnosis.audioContextState}</p>
+                    <p><strong>MediaDevices:</strong> ${diagnosis.mediaDevicesSupported ? 'Unterstützt' : 'Nicht unterstützt'}</p>
+                    <p><strong>Audio-Player:</strong> ${diagnosis.audioPlayerExists ? 'Erstellt' : 'Nicht erstellt'}</p>
+                    <p><strong>Spielt ab:</strong> ${diagnosis.isPlaying ? 'Ja' : 'Nein'}</p>
+                    <p><strong>DB-Levels:</strong> ${diagnosis.dbLevelsCount}</p>
+                    <p><strong>Audio-Blob:</strong> ${diagnosis.recordedAudioExists ? 'Vorhanden' : 'Nicht vorhanden'}</p>
+                </div>
+                <button onclick="this.parentElement.remove()" style="margin-top: 15px; padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 5px;">Schließen</button>
+            `;
+            
+            document.body.appendChild(diagnosisDialog);
+        }
+
+        // NEUE BUTTONS für Audio-Debugging (optional - füge sie zur UI hinzu)
+        // <button class="btn" onclick="diagnoseAudioIssues()">AUDIO DIAGNOSE</button>
+        // <button class="btn" onclick="applyBrowserSpecificAudioFixes()">AUDIO FIX</button>
+
+        // NEU: Initialisierung beim Laden
+        document.addEventListener('DOMContentLoaded', function() {
+            // ... bestehender Code ...
+            
+            // NEU: Mobile Audio initialisieren (vereinfacht)
+            initMobileAudio();
+            
+            // NEU: Browser-spezifische Fixes anwenden
+            applyBrowserSpecificAudioFixes();
+            
+            // NEU: Audio-Berechtigungen prüfen
+            checkAndRequestAudioPermissions();
+        });
+
+        // NEUE GLOBALE VARIABLEN für erweiterte Audio-Visualisierung
+        let detailWindowOpen = false;
+        let rotationAngle = 0;
+        let customAudioModifications = {
+            pointSizeMultiplier: 1.0,
+            depthInfluenceMultiplier: 1.0,
+            consistencyMultiplier: 1.0,
+            volumeMultiplier: 1.0
+        };
+
+        // NEU: 8 Begriffe für die Rotation
+        const rotationTerms = [
+            "KLEINE PUNKTE",
+            "GROSSE PUNKTE", 
+            "SORTED",
+            "SCATTERED",
+            "FLACHE DEPTH",
+            "STARKE DEPTH",
+            "GLEICH",
+            "ABWECHSELND"
+        ];
+
+        // NEUE FUNKTION: Labels basierend auf Rotation aktualisieren
+        function updateRotationLabels(angle) {
+            const labels = document.querySelectorAll('.detail-labels');
+            const steps = Math.floor(angle / 90); // 0, 1, 2, 3
+            
+            labels.forEach((label, index) => {
+                // NEU: Berechne neue Position basierend auf Rotation
+                const newIndex = (index + steps) % 8;
+                const newText = rotationTerms[newIndex];
+                
+                // NEU: Text aktualisieren
+                label.textContent = newText;
+                label.setAttribute('data-original-text', newText);
+                
+                // NEU: Farbe basierend auf Position anpassen
+                if (newIndex < 4) {
+                    // Erste 4 Begriffe: Grün-Töne
+                    label.style.color = `hsl(${120 + newIndex * 30}, 80%, 70%)`;
+                } else {
+                    // Letzte 4 Begriffe: Rot-Töne
+                    label.style.color = `hsl(${0 + (newIndex - 4) * 30}, 80%, 70%)`;
+                }
+            });
+        }
+
+        // NEUE FUNKTION: Rotation anwenden (nur Viertelschritte)
+        function applyRotation(angle) {
+            // NEU: Nur Vierteldrehungen erlauben
+            const validAngles = [0, 90, 180, 270];
+            const closestAngle = validAngles.reduce((prev, curr) => {
+                return Math.abs(curr - angle) < Math.abs(prev - angle) ? curr : prev;
+            });
+            
+            rotationAngle = closestAngle;
+            
+            // NEU: Slider auf gültigen Wert setzen
+            const slider = document.getElementById('rotation-slider');
+            if (slider) {
+                slider.value = closestAngle;
+            }
+            
+            // NEU: Button-Status aktualisieren
+            updateRotationButtons(closestAngle);
+            
+            // NEU: Labels aktualisieren
+            updateRotationLabels(closestAngle);
+            
+            // NEU: Berechne neue Modifikationen basierend auf Rotation
+            const quarterSteps = closestAngle / 90; // 0, 1, 2, 3
+            
+            // NEU: Modifikationen für jede Vierteldrehung
+            switch (quarterSteps) {
+                case 0: // 0° - Standard
+                    customAudioModifications = {
+                        pointSizeMultiplier: 0.5, // Kleine Punkte
+                        depthInfluenceMultiplier: 0.3, // Flache Depth
+                        consistencyMultiplier: 0.5, // Gleich
+                        volumeMultiplier: 0.5 // Leise
+                    };
+                    break;
+                    
+                case 1: // 90° - Erste Vierteldrehung
+                    customAudioModifications = {
+                        pointSizeMultiplier: 2.0, // Große Punkte
+                        depthInfluenceMultiplier: 0.3, // Flache Depth
+                        consistencyMultiplier: 0.5, // Gleich
+                        volumeMultiplier: 0.5 // Leise
+                    };
+                    break;
+                    
+                case 2: // 180° - Zweite Vierteldrehung
+                    customAudioModifications = {
+                        pointSizeMultiplier: 2.0, // Große Punkte
+                        depthInfluenceMultiplier: 3.0, // Starke Depth
+                        consistencyMultiplier: 0.5, // Gleich
+                        volumeMultiplier: 0.5 // Leise
+                    };
+                    break;
+                    
+                case 3: // 270° - Dritte Vierteldrehung
+                    customAudioModifications = {
+                        pointSizeMultiplier: 2.0, // Große Punkte
+                        depthInfluenceMultiplier: 3.0, // Starke Depth
+                        consistencyMultiplier: 2.0, // Abwechselnd
+                        volumeMultiplier: 0.5 // Leise
+                    };
+                    break;
+            }
+            
+            // NEU: Detailfenster aktualisieren
+            updateDetailWindow();
+            
+            // NEU: Aktuelle Point Clouds mit neuen Modifikationen aktualisieren
+            applyCustomAudioModifications();
+            
+            console.log(`🔄 Rotation angewendet: ${closestAngle}° (${quarterSteps} Viertelschritte)`);
+            console.log("🎛️  Neue Modifikationen:", customAudioModifications);
+        }
+
+        // NEUE FUNKTION: Rotation-Buttons aktualisieren
+        function updateRotationButtons(activeAngle) {
+            const buttons = document.querySelectorAll('.rotation-step-btn');
+            buttons.forEach(button => {
+                const buttonAngle = parseInt(button.getAttribute('data-angle'));
+                if (buttonAngle === activeAngle) {
+                    button.classList.add('active');
+                } else {
+                    button.classList.remove('active');
+                }
+            });
+        }
+
+        // NEUE FUNKTION: Detailfenster aktualisieren
+        function updateDetailWindow() {
+            if (!detailWindowOpen) return;
+            
+            const detailIndicator = document.getElementById('detail-indicator');
+            const rotationValue = document.getElementById('rotation-value');
+            
+            if (!detailIndicator || !rotationValue) return;
+            
+            // NEU: Position basierend auf aktuellen Audio-Werten
+            const x = customAudioModifications.volumeMultiplier; // 0-1
+            const y = customAudioModifications.consistencyMultiplier; // 0-1
+            
+            // NEU: Position im Kreis berechnen (0-1 zu -1 bis 1)
+            const circleX = (x - 0.5) * 2; // -1 bis 1
+            const circleY = (y - 0.5) * 2; // -1 bis 1
+            
+            // NEU: Auf Kreis begrenzen
+            const distance = Math.sqrt(circleX * circleX + circleY * circleY);
+            const clampedX = distance > 1 ? circleX / distance : circleX;
+            const clampedY = distance > 1 ? circleY / distance : circleY;
+            
+            // NEU: Position in Pixeln (innerer Kreis = 100px Radius)
+            const pixelX = clampedX * 100;
+            const pixelY = clampedY * 100;
+            
+            // NEU: Farbe basierend auf Position
+            const hue = x * 120; // Grün (kleine Punkte) -> Rot (große Punkte)
+            const saturation = 80 + (y * 20); // 80-100%
+            const lightness = 50 + (y * 20); // 50-70%
+            
+            detailIndicator.style.transform = `translate(calc(-50% + ${pixelX}px), calc(-50% + ${pixelY}px))`;
+            detailIndicator.style.backgroundColor = `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+            
+            // NEU: Rotation anzeigen
+            rotationValue.textContent = `${rotationAngle}°`;
+            
+            console.log(`🎯 Detail-Window: X=${x.toFixed(2)}, Y=${y.toFixed(2)}, Rotation=${rotationAngle}°`);
+        }
+
+        // NEUE FUNKTION: Event-Listener für Detailfenster (erweitert)
+        function setupDetailWindowEvents() {
+            // NEU: Click-Event für Audio-Visualisierung
+            const visualization = document.getElementById('audio-visualization');
+            if (visualization) {
+                visualization.addEventListener('click', openAudioDetailWindow);
+            }
+            
+            // NEU: Close-Button für Detailfenster
+            const closeBtn = document.getElementById('detail-close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', closeAudioDetailWindow);
+            }
+            
+            // NEU: Rotation-Slider (nur Viertelschritte)
+            const rotationSlider = document.getElementById('rotation-slider');
+            if (rotationSlider) {
+                rotationSlider.addEventListener('input', (e) => {
+                    const angle = parseInt(e.target.value);
+                    applyRotation(angle);
+                });
+            }
+            
+            // NEU: Rotation-Buttons
+            const rotationButtons = document.querySelectorAll('.rotation-step-btn');
+            rotationButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const angle = parseInt(button.getAttribute('data-angle'));
+                    applyRotation(angle);
+                });
+            });
+            
+            // NEU: Click außerhalb schließt Detailfenster
+            document.addEventListener('click', (e) => {
+                const detailWindow = document.getElementById('audio-detail-window');
+                const visualization = document.getElementById('audio-visualization');
+                
+                if (detailWindowOpen && 
+                    !detailWindow.contains(e.target) && 
+                    !visualization.contains(e.target)) {
+                    closeAudioDetailWindow();
+                }
+            });
+        }
+
+        // NEUE FUNKTION: Detailfenster öffnen (erweitert)
+        function openAudioDetailWindow() {
+            const detailWindow = document.getElementById('audio-detail-window');
+            if (detailWindow) {
+                detailWindow.style.display = 'block';
+                detailWindowOpen = true;
+                
+                // NEU: Aktuelle Werte anzeigen
+                updateDetailWindow();
+                
+                // NEU: Labels für aktuelle Rotation setzen
+                updateRotationLabels(rotationAngle);
+                
+                // NEU: Button-Status setzen
+                updateRotationButtons(rotationAngle);
+                
+                console.log("🔍 Audio-Detailfenster geöffnet");
+            }
+        }
+
+        // NEUE FUNKTION: Benutzerdefinierte Audio-Modifikationen anwenden
+        function applyCustomAudioModifications() {
+            scene.children.forEach(child => {
+                if (child.type === 'Points' && child.material) {
+                    // NEU: Punktgröße basierend auf benutzerdefinierten Modifikationen
+                    const basePointSize = parseFloat(document.getElementById('pointSize').value);
+                    const newPointSize = basePointSize * customAudioModifications.pointSizeMultiplier;
+                    child.material.size = newPointSize;
+                    
+                    // NEU: Scale basierend auf Depth-Influence
+                    const scaleFactor = customAudioModifications.depthInfluenceMultiplier;
+                    child.scale.setScalar(scaleFactor);
+                    
+                    // NEU: Rotation basierend auf Consistency
+                    if (customAudioModifications.consistencyMultiplier > 0.7) {
+                        child.rotation.y += 0.01; // Mehr Rotation für "Scattered"
+                    }
+                }
+            });
+        }
+
+        // MODIFIZIERTE FUNKTION: Point Cloud mit benutzerdefinierten Modifikationen erstellen
+        function createPointCloudInScene(pointCloudData, position) {
+            if (!pointCloudData) return;
+            
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(pointCloudData.positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(pointCloudData.colors, 3));
+            
+            // NEU: Punktgröße basierend auf benutzerdefinierten Modifikationen
+            let pointSize = parseFloat(document.getElementById('pointSize').value);
+            if (pointCloudData.metadata && pointCloudData.metadata.pointSizeMultiplier) {
+                pointSize *= pointCloudData.metadata.pointSizeMultiplier;
+            }
+            
+            // NEU: Benutzerdefinierte Modifikationen anwenden
+            pointSize *= customAudioModifications.pointSizeMultiplier;
+            
+            const material = new THREE.PointsMaterial({
+                size: pointSize,
+                vertexColors: true,
+                sizeAttenuation: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const pointCloud = new THREE.Points(geometry, material);
+            pointCloud.position.set(0, 0, 0);
+            
+            // NEU: Scale basierend auf benutzerdefinierten Modifikationen
+            const scaleFactor = customAudioModifications.depthInfluenceMultiplier;
+            pointCloud.scale.setScalar(scaleFactor);
+            
+            scene.add(pointCloud);
+            
+            const pointCloudObject = {
+                mesh: pointCloud,
+                geometry: geometry,
+                material: material,
+                originalVertices: [...pointCloudData.positions],
+                audioAnalysis: pointCloudData.metadata?.audioAnalysis,
+                update: () => {
+                    // NEU: Sanfte Rotation basierend auf Consistency
+                    if (customAudioModifications.consistencyMultiplier > 0.7) {
+                        pointCloud.rotation.y += 0.001;
+                    }
+                }
+            };
+            
+            objectsToUpdate.push(pointCloudObject);
+            
+            // Verbesserte Kamera-Positionierung für Panoramen
+            if (pointCloudData.metadata && pointCloudData.metadata.gps3DPosition) {
+                const gpsPos = pointCloudData.metadata.gps3DPosition;
+                console.log("🎯 Zentriere Kamera auf Panorama bei:", gpsPos);
+                
+                camera.position.set(gpsPos.x + 10, gpsPos.y + 10, gpsPos.z + 10);
+                camera.lookAt(gpsPos.x, gpsPos.y, gpsPos.z);
+                controls.target.set(gpsPos.x, gpsPos.y, gpsPos.z);
+                controls.update();
+                
+                console.log("📷 Kamera auf Panorama zentriert");
+            }
+            
+            console.log("Point Cloud zur Szene hinzugefügt bei GPS-Position:", pointCloudData.metadata.gps3DPosition);
+            console.log("Point Cloud Punkte:", pointCloudData.count);
+            console.log("🎛️  Benutzerdefinierte Modifikationen angewendet:", customAudioModifications);
+            
+            showStatus(`${pointCloudData.count.toLocaleString()} Punkte erstellt!`, 'success');
+        }
+
+        // NEUE FUNKTION: Detailfenster-Steuerung initialisieren
+        function initDetailWindowControls() {
+            const detailWindow = document.getElementById('audio-detail-window');
+            if (!detailWindow) return;
+            
+            let isDragging = false;
+            let startAngle = 0;
+            let currentRotation = 0;
+            
+            // NEU: Touch- und Mouse-Events für Rotation
+            detailWindow.addEventListener('mousedown', startRotation);
+            detailWindow.addEventListener('touchstart', startRotation);
+            
+            document.addEventListener('mousemove', handleRotation);
+            document.addEventListener('touchmove', handleRotation);
+            
+            document.addEventListener('mouseup', stopRotation);
+            document.addEventListener('touchend', stopRotation);
+            
+            // NEU: Schließen-Button
+            const closeBtn = document.getElementById('audio-detail-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    detailWindow.style.display = 'none';
+                });
+            }
+            
+            function startRotation(e) {
+                e.preventDefault();
+                isDragging = true;
+                const rect = detailWindow.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                
+                startAngle = Math.atan2(clientY - centerY, clientX - centerX);
+            }
+            
+            function handleRotation(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                
+                const rect = detailWindow.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                
+                const currentAngle = Math.atan2(clientY - centerY, clientX - centerX);
+                const deltaAngle = currentAngle - startAngle;
+                
+                // NEU: Nur Vierteldrehungen (90° Schritte) erlauben
+                const targetRotation = Math.round((currentRotation + deltaAngle) / (Math.PI / 2)) * (Math.PI / 2);
+                
+                if (Math.abs(targetRotation - currentRotation) > 0.1) {
+                    currentRotation = targetRotation;
+                    rotateDetailWindow(currentRotation);
+                    updateAudioInfluences(currentRotation);
+                }
+            }
+            
+            function stopRotation() {
+                isDragging = false;
+            }
+        }
+
+        // NEUE FUNKTION: Detailfenster rotieren
+        function rotateDetailWindow(angle) {
+            const outerCircle = document.getElementById('audio-detail-outer-circle');
+            if (outerCircle) {
+                outerCircle.style.transform = `rotate(${angle}rad)`;
+            }
+        }
+
+        // NEUE FUNKTION: Audio-Einflüsse basierend auf Rotation aktualisieren
+        function updateAudioInfluences(rotation) {
+            // NEU: Berechne neue Mapping-Werte basierend auf Rotation
+            const rotationDegrees = (rotation * 180) / Math.PI;
+            const quarter = Math.round(rotationDegrees / 90) % 4;
+            
+            console.log(`🔄 Rotation: ${rotationDegrees.toFixed(0)}° (Viertel: ${quarter})`);
+            
+            // NEU: Mapping basierend auf Vierteldrehung
+            switch (quarter) {
+                case 0: // Original
+                    audioInfluences = {
+                        loudToSize: 'large',
+                        quietToSize: 'small',
+                        scatteredToDepth: 'extreme',
+                        sortedToDepth: 'flat'
+                    };
+                    break;
+                case 1: // 90° gedreht
+                    audioInfluences = {
+                        loudToSize: 'small',
+                        quietToSize: 'large',
+                        scatteredToDepth: 'flat',
+                        sortedToDepth: 'extreme'
+                    };
+                    break;
+                case 2: // 180° gedreht
+                    audioInfluences = {
+                        loudToSize: 'small',
+                        quietToSize: 'large',
+                        scatteredToDepth: 'extreme',
+                        sortedToDepth: 'flat'
+                    };
+                    break;
+                case 3: // 270° gedreht
+                    audioInfluences = {
+                        loudToSize: 'large',
+                        quietToSize: 'small',
+                        scatteredToDepth: 'flat',
+                        sortedToDepth: 'extreme'
+                    };
+                    break;
+            }
+            
+            console.log("🎛️ Neue Audio-Einflüsse:", audioInfluences);
+            
+            // NEU: Sofortige Anwendung auf aktuelle Panoramen
+            applyAudioInfluencesToCurrentPanoramas();
+        }
+
+        // NEUE FUNKTION: Audio-Einflüsse auf aktuelle Panoramen anwenden
+        function applyAudioInfluencesToCurrentPanoramas() {
+            // NEU: Alle aktuellen Point Clouds neu rendern mit neuen Einflüssen
+            scene.children.forEach(child => {
+                if (child.type === 'Points' && child.userData.isAudioModified) {
+                    // NEU: Point Cloud mit neuen Audio-Einflüssen neu erstellen
+                    recreatePointCloudWithAudioInfluences(child);
+                }
+            });
+        }
+
+        // MODIFIZIERTE FUNKTION: Audio-Animation OHNE ROTATION
+        function animatePointCloudWithAudio(currentTime, timeBasedDbMap, recordingDuration) {
+            if (!timeBasedDbMap || !recordingDuration) return;
+            
+            // Normalisierte Zeit (0-1)
+            const normalizedTime = (currentTime % recordingDuration) / recordingDuration;
+            
+            // Finde den aktuellen DB-Level für diese Zeit
+            const timeIndex = Math.floor(normalizedTime * timeBasedDbMap.length);
+            const clampedTimeIndex = Math.max(0, Math.min(timeBasedDbMap.length - 1, timeIndex));
+            const currentDbLevel = timeBasedDbMap[clampedTimeIndex].dbLevel;
+            
+            // NEU: Dynamische Animation für alle Point Clouds (OHNE ROTATION)
+            scene.children.forEach(child => {
+                if (child.type === 'Points' && child.material) {
+                    // NEU: Bewegung basierend auf DB-Level (NUR SKALIERUNG UND POSITION)
+                    const movementIntensity = currentDbLevel * 3.0; // 0-3x Bewegung
+                    
+                    // NEU: Verschiedene Bewegungsarten basierend auf DB-Level (OHNE ROTATION)
+                    if (currentDbLevel > 0.7) {
+                        // LAUT: Nur Pulsierende Skalierung (KEINE ROTATION)
+                        const pulseScale = 1.0 + Math.sin(Date.now() * 0.01) * 0.2 * movementIntensity;
+                        child.scale.setScalar(pulseScale);
+                        
+                    } else if (currentDbLevel > 0.4) {
+                        // MITTEL: Sanfte Skalierung (KEINE ROTATION)
+                        const gentleScale = 1.0 + Math.sin(Date.now() * 0.005) * 0.1 * movementIntensity;
+                        child.scale.setScalar(gentleScale);
+                        
+                    } else {
+                        // LEISE: Keine Bewegung (KEINE ROTATION)
+                        child.scale.setScalar(1.0);
+                    }
+                    
+                    // NEU: Position-Bewegung für sehr laute Bereiche (OHNE ROTATION)
+                    if (currentDbLevel > 0.8) {
+                        const wobbleX = Math.sin(Date.now() * 0.02) * 0.5 * movementIntensity;
+                        const wobbleY = Math.cos(Date.now() * 0.015) * 0.3 * movementIntensity;
+                        child.position.x += wobbleX * 0.01;
+                        child.position.y += wobbleY * 0.01;
+                    }
+                }
+            });
+            
+            // Debug-Ausgabe für laute Bereiche
+            if (currentDbLevel > 0.6) {
+                console.log(`🎵 Audio-Animation: DB=${currentDbLevel.toFixed(2)}, Bewegung=${movementIntensity.toFixed(2)}x`);
+            }
+        }
+
+        // MODIFIZIERTE FUNKTION: Point Cloud mit benutzerdefinierten Modifikationen erstellen (OHNE ROTATION)
+        function createPointCloudInScene(pointCloudData, position) {
+            if (!pointCloudData) return;
+            
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(pointCloudData.positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(pointCloudData.colors, 3));
+            
+            // NEU: Punktgröße basierend auf benutzerdefinierten Modifikationen
+            let pointSize = parseFloat(document.getElementById('pointSize').value);
+            if (pointCloudData.metadata && pointCloudData.metadata.pointSizeMultiplier) {
+                pointSize *= pointCloudData.metadata.pointSizeMultiplier;
+            }
+            
+            // NEU: Benutzerdefinierte Modifikationen anwenden
+            pointSize *= customAudioModifications.pointSizeMultiplier;
+            
+            const material = new THREE.PointsMaterial({
+                size: pointSize,
+                vertexColors: true,
+                sizeAttenuation: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const pointCloud = new THREE.Points(geometry, material);
+            pointCloud.position.set(0, 0, 0);
+            
+            // NEU: Scale basierend auf benutzerdefinierten Modifikationen
+            const scaleFactor = customAudioModifications.depthInfluenceMultiplier;
+            pointCloud.scale.setScalar(scaleFactor);
+            
+            scene.add(pointCloud);
+            
+            const pointCloudObject = {
+                mesh: pointCloud,
+                geometry: geometry,
+                material: material,
+                originalVertices: [...pointCloudData.positions],
+                audioAnalysis: pointCloudData.metadata?.audioAnalysis,
+                update: () => {
+                    // NEU: KEINE ROTATION MEHR
+                    // Point Cloud bleibt statisch
+                }
+            };
+            
+            objectsToUpdate.push(pointCloudObject);
+            
+            // Verbesserte Kamera-Positionierung für Panoramen
+            if (pointCloudData.metadata && pointCloudData.metadata.gps3DPosition) {
+                const gpsPos = pointCloudData.metadata.gps3DPosition;
+                console.log("🎯 Zentriere Kamera auf Panorama bei:", gpsPos);
+                
+                camera.position.set(gpsPos.x + 10, gpsPos.y + 10, gpsPos.z + 10);
+                camera.lookAt(gpsPos.x, gpsPos.y, gpsPos.z);
+                controls.target.set(gpsPos.x, gpsPos.y, gpsPos.z);
+                controls.update();
+                
+                console.log("📷 Kamera auf Panorama zentriert");
+            }
+            
+            console.log("Point Cloud zur Szene hinzugefügt bei GPS-Position:", pointCloudData.metadata.gps3DPosition);
+            console.log("Point Cloud Punkte:", pointCloudData.count);
+            console.log("🎛️  Benutzerdefinierte Modifikationen angewendet:", customAudioModifications);
+            
+            showStatus(`${pointCloudData.count.toLocaleString()} Punkte erstellt!`, 'success');
+        }
+
+        // MODIFIZIERTE FUNKTION: Benutzerdefinierte Audio-Modifikationen anwenden (OHNE ROTATION)
+        function applyCustomAudioModifications() {
+            scene.children.forEach(child => {
+                if (child.type === 'Points' && child.material) {
+                    // NEU: Punktgröße basierend auf benutzerdefinierten Modifikationen
+                    const basePointSize = parseFloat(document.getElementById('pointSize').value);
+                    const newPointSize = basePointSize * customAudioModifications.pointSizeMultiplier;
+                    child.material.size = newPointSize;
+                    
+                    // NEU: Scale basierend auf Depth-Influence
+                    const scaleFactor = customAudioModifications.depthInfluenceMultiplier;
+                    child.scale.setScalar(scaleFactor);
+                    
+                    // NEU: KEINE ROTATION MEHR
+                    // Point Cloud bleibt statisch
+                }
+            });
+        }
+
+        // MODIFIZIERTE FUNKTION: Audio-basierte Modifikationen anwenden (OHNE ROTATION)
+        function applyAudioBasedModifications() {
+            scene.children.forEach(child => {
+                if (child.type === 'Points' && child.material) {
+                    // NEU: Nur Skalierung und Position, KEINE ROTATION
+                    const dbLevel = child.userData.dbLevel || 0.5;
+                    
+                    // NEU: Skalierung basierend auf DB-Level
+                    const scaleFactor = 0.5 + (dbLevel * 1.5); // 0.5 - 2.0
+                    child.scale.setScalar(scaleFactor);
+                    
+                    // NEU: Position-Bewegung für laute Geräusche (OHNE ROTATION)
+                    if (dbLevel > 0.7) {
+                        const wobbleX = Math.sin(Date.now() * 0.02) * 0.5;
+                        const wobbleY = Math.cos(Date.now() * 0.015) * 0.3;
+                        child.position.x += wobbleX * 0.01;
+                        child.position.y += wobbleY * 0.01;
+                    }
+                    
+                    // NEU: KEINE ROTATION MEHR
+                }
+            });
+        }
     </script>
 </body>
 </html> 

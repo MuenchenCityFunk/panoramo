@@ -1,0 +1,7 @@
+version: "2"
+authtoken: "yeMGF0WT71qquTEFA9Y0eJ9ClF_6kcbw6E878sgh8czyeJDD"
+tunnels:
+  frontend:
+    addr: 8080
+  backend:
+    addr: 5001

@@ -580,7 +580,7 @@ def create_3d_obj_from_depth(rgb_image, depth_image, image_path, output_folder, 
 def create_panorama_from_video_smart(video_path: str, stitch_direction: int = 1, 
                                    frame_rate: Optional[float] = None, max_frames: Optional[int] = None,
                                    output_folder: str = "output", temp_folder: Optional[str] = None,
-                                   confidence_threshold: int = 0, create_depth_map: bool = True) -> str:
+                                   confidence_threshold: int = 0, create_depth_map: bool = True) -> dict:
     """
     Intelligente Version, die alle erfolgreichen Panoramen behält.
     Erstellt mehrere Panoramen und behält alle, die erfolgreich erstellt wurden.
@@ -596,7 +596,7 @@ def create_panorama_from_video_smart(video_path: str, stitch_direction: int = 1,
         create_depth_map (bool): Erstellt automatisch eine Depth Map (Standard: True)
     
     Returns:
-        str: Pfad zum neuesten erstellten Panorama
+        dict: Dictionary mit Pfad und Stitching-Statistiken
     """
     # Temporären Ordner erstellen
     if temp_folder is None:
@@ -625,6 +625,7 @@ def create_panorama_from_video_smart(video_path: str, stitch_direction: int = 1,
         utils.CONFIDENCE_THRESH = confidence_threshold
         
         created_panoramas = []
+        all_panorama_results = []  # NEU: Sammle alle erfolgreichen Ergebnisse
         
         try:
             # Erstelle mehrere Panoramen und behalte alle
@@ -633,13 +634,14 @@ def create_panorama_from_video_smart(video_path: str, stitch_direction: int = 1,
             # Panorama 1: Alle Frames
             try:
                 print("Versuch 1: Alle Frames stitchen...")
-                stitch_images_and_save(
+                result = stitch_images_and_save(
                     image_folder=temp_folder,
                     image_filenames=valid_frame_files,
                     stitch_direction=stitch_direction,
                     output_folder=output_folder
                 )
                 panorama_attempts.append(("full", len(valid_frame_files)))
+                all_panorama_results.append(result)  # NEU: Sammle Ergebnis
                 print("✅ Vollständiges Panorama erstellt")
             except Exception as e:
                 print(f"❌ Vollständiges Panorama fehlgeschlagen: {e}")
@@ -649,13 +651,14 @@ def create_panorama_from_video_smart(video_path: str, stitch_direction: int = 1,
                 try:
                     print("Versuch 2: Erste Hälfte der Frames stitchen...")
                     half_frames = valid_frame_files[:len(valid_frame_files)//2]
-                    stitch_images_and_save(
+                    result = stitch_images_and_save(
                         image_folder=temp_folder,
                         image_filenames=half_frames,
                         stitch_direction=stitch_direction,
                         output_folder=output_folder
                     )
                     panorama_attempts.append(("half", len(half_frames)))
+                    all_panorama_results.append(result)  # NEU: Sammle Ergebnis
                     print("✅ Halb-Panorama erstellt")
                 except Exception as e:
                     print(f"❌ Halb-Panorama fehlgeschlagen: {e}")
@@ -665,13 +668,14 @@ def create_panorama_from_video_smart(video_path: str, stitch_direction: int = 1,
                 try:
                     print("Versuch 3: Erste 10 Frames stitchen...")
                     first_10 = valid_frame_files[:10]
-                    stitch_images_and_save(
+                    result = stitch_images_and_save(
                         image_folder=temp_folder,
                         image_filenames=first_10,
                         stitch_direction=stitch_direction,
                         output_folder=output_folder
                     )
                     panorama_attempts.append(("first10", len(first_10)))
+                    all_panorama_results.append(result)  # NEU: Sammle Ergebnis
                     print("✅ Erste-10-Panorama erstellt")
                 except Exception as e:
                     print(f"❌ Erste-10-Panorama fehlgeschlagen: {e}")
@@ -681,13 +685,14 @@ def create_panorama_from_video_smart(video_path: str, stitch_direction: int = 1,
                 try:
                     print("Versuch 4: Erste 5 Frames stitchen...")
                     first_5 = valid_frame_files[:5]
-                    stitch_images_and_save(
+                    result = stitch_images_and_save(
                         image_folder=temp_folder,
                         image_filenames=first_5,
                         stitch_direction=stitch_direction,
                         output_folder=output_folder
                     )
                     panorama_attempts.append(("first5", len(first_5)))
+                    all_panorama_results.append(result)  # NEU: Sammle Ergebnis
                     print("✅ Erste-5-Panorama erstellt")
                 except Exception as e:
                     print(f"❌ Erste-5-Panorama fehlgeschlagen: {e}")
@@ -695,6 +700,16 @@ def create_panorama_from_video_smart(video_path: str, stitch_direction: int = 1,
         finally:
             # Threshold zurücksetzen
             utils.CONFIDENCE_THRESH = original_threshold
+        
+        # NEU: Finde das beste Panorama (mit den meisten Frames)
+        best_panorama_result = None
+        if all_panorama_results:
+            # Sortiere nach erfolgreichen Frames (absteigend)
+            all_panorama_results.sort(key=lambda x: x['successful_frames'], reverse=True)
+            best_panorama_result = all_panorama_results[0]
+            print(f"🏗️  Bestes Panorama: {best_panorama_result['filename']} mit {best_panorama_result['successful_frames']} Frames")
+        else:
+            print("⚠️  Keine erfolgreichen Panoramen gefunden")
         
         # Finde alle erstellten Panoramen
         panorama_files = [f for f in os.listdir(output_folder) 
@@ -704,25 +719,55 @@ def create_panorama_from_video_smart(video_path: str, stitch_direction: int = 1,
             # Sortiere nach Erstellungszeit (neueste zuerst)
             panorama_files.sort(key=lambda x: os.path.getmtime(os.path.join(output_folder, x)), reverse=True)
             
-            # Behalte alle Panoramen - lösche nichts!
-            print(f" {len(panorama_files)} Panoramen erstellt und behalten:")
+            # NEU: Lösche alle Panoramen außer dem besten
+            best_panorama_filename = best_panorama_result['filename'] if best_panorama_result else None
+            
+            # NEU: Debug-Informationen sammeln
+            debug_info = []
+            debug_info.append(f"🔍 Debug: best_panorama_result = {best_panorama_result}")
+            debug_info.append(f"🔍 Debug: best_panorama_filename = {best_panorama_filename}")
+            debug_info.append(f"🗑️  Lösche {len(panorama_files)} erstellte Panoramen, behalte nur das beste...")
+            
             for panorama_file in panorama_files:
                 panorama_path = os.path.join(output_folder, panorama_file)
-                try:
-                    img = cv2.imread(panorama_path)
-                    if img is not None:
-                        print(f"   📊 {panorama_file}: Breite={img.shape[1]}, Höhe={img.shape[0]}")
-                        created_panoramas.append(panorama_path)
-                except Exception as e:
-                    print(f"⚠️  Fehler beim Laden von {panorama_file}: {e}")
+                print(f"🔍 Prüfe: {panorama_file} == {best_panorama_filename}?")
+                
+                # Behalte nur das beste Panorama
+                if panorama_file == best_panorama_filename:
+                    try:
+                        img = cv2.imread(panorama_path)
+                        if img is not None:
+                            print(f"✅ Behalte: {panorama_file} (Breite={img.shape[1]}, Höhe={img.shape[0]})")
+                            created_panoramas.append(panorama_path)
+                    except Exception as e:
+                        print(f"⚠️  Fehler beim Laden von {panorama_file}: {e}")
+                else:
+                    # Lösche das andere Panorama
+                    try:
+                        os.remove(panorama_path)
+                        print(f"🗑️  Gelöscht: {panorama_file}")
+                    except Exception as e:
+                        print(f"⚠️  Fehler beim Löschen von {panorama_file}: {e}")
             
-            # Gib das neueste Panorama zurück
-            if created_panoramas:
-                newest_panorama = created_panoramas[0]
-                print(f" Neuestes Panorama: {os.path.basename(newest_panorama)}")
-                return newest_panorama
+            # NEU: Gib das beste Panorama mit Statistiken zurück
+            if best_panorama_result:
+                best_panorama_result['debug_info'] = debug_info  # NEU: Debug-Info hinzufügen
+                print(f"✅ Bestes Panorama behalten: {best_panorama_result['filename']}")
+                return best_panorama_result
             else:
-                raise RuntimeError("Kein gültiges Panorama gefunden")
+                # Fallback: Erstelle Statistiken aus dem neuesten Panorama
+                newest_panorama = created_panoramas[0] if created_panoramas else None
+                if newest_panorama:
+                    return {
+                        "file_path": newest_panorama,
+                        "filename": os.path.basename(newest_panorama),
+                        "total_frames": len(valid_frame_files),
+                        "successful_stitches": len(valid_frame_files) - 1,  # Schätzung
+                        "successful_frames": len(valid_frame_files),
+                        "stitch_success_rate": 1.0
+                    }
+                else:
+                    raise RuntimeError("Kein gültiges Panorama gefunden")
         else:
             raise RuntimeError("Kein Panorama konnte erstellt werden")
             

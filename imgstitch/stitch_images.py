@@ -86,11 +86,13 @@ def stitch_images_and_save(image_folder, image_filenames, stitch_direction, outp
         output_folder (str): the directory to save the stitched image (default is None, which creates a directory named "output" to save)
     
     Returns:
-        None
+        dict: Dictionary containing file path and stitching statistics
     """
     timestr = time.strftime("%Y%m%d_%H%M%S")
     filename = "stitched_image_" + timestr + ".jpg"
-    stitched_img = stitch_images(image_folder, image_filenames, stitch_direction)
+    
+    # Erweitere stitch_images um erfolgreiche Stitches zu zählen
+    stitched_img, successful_stitches = stitch_images_with_stats(image_folder, image_filenames, stitch_direction)
     
     # VERBESSERTE Validierung - akzeptiert Teil-Panoramen
     if stitched_img is None:
@@ -124,3 +126,70 @@ def stitch_images_and_save(image_folder, image_filenames, stitch_direction, outp
     print("The stitched image is saved at: " + full_save_path)
     print(f"Panorama-Größe: {stitched_img.shape}")
     print(f"✅ Teil-Panorama erfolgreich erstellt: {len(image_filenames)} Frames → {stitched_img.shape[1]}x{stitched_img.shape[0]} Pixel")
+    
+    # NEU: Rückgabe mit Statistiken
+    return {
+        "file_path": full_save_path,
+        "filename": filename,
+        "total_frames": len(image_filenames),
+        "successful_stitches": successful_stitches,
+        "successful_frames": successful_stitches + 1,  # +1 für das Pivot-Bild
+        "stitch_success_rate": (successful_stitches + 1) / len(image_filenames) if len(image_filenames) > 0 else 0
+    }
+
+def stitch_images_with_stats(image_folder, image_filenames, stitch_direction):
+    """Erweiterte Version von stitch_images, die auch Statistiken zurückgibt."""
+    num_images = len(image_filenames)
+    
+    if num_images < 2:
+        raise(exceptions.InsufficientImagesError(num_images))
+    
+    valid_files, file_error_msg = utils.check_imgfile_validity(image_folder, image_filenames)
+    if not valid_files:
+        raise(exceptions.InvalidImageFilesError(file_error_msg))
+    
+    # Lade das erste Bild (Pivot)
+    pivot_img_path = os.path.join(image_folder, image_filenames[0])
+    pivot_img = cv2.imread(pivot_img_path)
+    
+    # Überprüfe ob das Pivot-Bild erfolgreich geladen wurde
+    if pivot_img is None:
+        raise RuntimeError(f"Konnte Pivot-Bild nicht laden: {pivot_img_path}")
+    
+    print(f"Pivot-Bild geladen: {image_filenames[0]} (Größe: {pivot_img.shape})")
+
+    successful_stitches = 0
+    for i in range(1, num_images, 1):
+        join_img_path = os.path.join(image_folder, image_filenames[i])
+        join_img = cv2.imread(join_img_path)
+        
+        # Überprüfe ob das Join-Bild erfolgreich geladen wurde
+        if join_img is None:
+            print(f"⚠️  Warnung: Konnte Bild nicht laden: {image_filenames[i]}, überspringe...")
+            continue
+        
+        print(f"Verarbeite Bild {i+1}/{num_images}: {image_filenames[i]} (Größe: {join_img.shape})")
+        
+        try:
+            pivot_img = utils.stitch_image_pair(pivot_img, join_img, stitch_direc=stitch_direction)
+            successful_stitches += 1
+        except Exception as e:
+            print(f"⚠️  Warnung: Fehler beim Stitching von {image_filenames[i]}: {e}, überspringe...")
+            continue
+    
+    print(f"✅ Erfolgreich gestitcht: {successful_stitches} von {num_images-1} Bildern")
+    
+    # VERBESSERTE Validierung - akzeptiert Teil-Panoramen
+    if pivot_img is None:
+        raise RuntimeError("Das finale Panorama ist None")
+    
+    if pivot_img.size == 0:
+        raise RuntimeError("Das finale Panorama ist leer (0 Pixel)")
+    
+    # Prüfe ob mindestens 2 Bilder erfolgreich gestitcht wurden
+    if successful_stitches < 1:
+        raise RuntimeError(f"Zu wenig erfolgreiche Stitches: {successful_stitches} (Minimum: 1)")
+    
+    print(f"🎯 Teil-Panorama erstellt: {successful_stitches+1} Bilder → {pivot_img.shape[1]}x{pivot_img.shape[0]} Pixel")
+    
+    return pivot_img, successful_stitches
