@@ -1,11 +1,11 @@
 {
-  "panorama_file": "stitched_image_20250705_190548.jpg",
-  "panorama_path": "output\\device_1751732541659_k5k2ss1yt\\stitched_image_20250705_190548.jpg",
+  "panorama_file": "stitched_image_20250706_152430.jpg",
+  "panorama_path": "output\\device_1751732541659_k5k2ss1yt\\stitched_image_20250706_152430.jpg",
   "gps_coordinates": {
-    "lat": 52.5041664,
-    "lon": 13.3988352,
+    "lat": 52.5632485,
+    "lon": 13.3936788,
     "accuracy": 10.0,
-    "timestamp": "2025-07-05T19:05:41.271339",
+    "timestamp": "2025-07-06T15:24:15.335093",
     "source": "mobile_gps"
   },
   "video_info": {
@@ -16,15 +16,15 @@
     "fps": 1000.0,
     "codec": "vp9"
   },
-  "created_at": "2025-07-05T19:06:42.424719",
-  "file_size": 84114,
+  "created_at": "2025-07-06T15:25:11.536200",
+  "file_size": 127727,
   "status": "completed",
   "device_type": "mobile_upload",
   "device_id": "device_1751732541659_k5k2ss1yt",
   "depth_map_created": false,
   "depth_map_path": null,
-  "image_width": 1018,
-  "image_height": 599,
+  "image_width": 1540,
+  "image_height": 555,
   "image_channels": 3,
   "additional_files": [
     {
@@ -33,8 +33,18 @@
       "type": "3d_model"
     },
     {
+      "filename": "3d_model_stitched_image_20250706_152430.gltf",
+      "file_size": 2439136,
+      "type": "3d_model"
+    },
+    {
       "filename": "depth_map_stitched_image_20250705_190548.png",
       "file_size": 45596,
+      "type": "depth_map"
+    },
+    {
+      "filename": "depth_map_stitched_image_20250706_152430.png",
+      "file_size": 46480,
       "type": "depth_map"
     }
   ]

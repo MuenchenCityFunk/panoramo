@@ -1,5 +1,4 @@
-// python -m http.server 8080
-// python -m http.server 8080
+// python panorama_api.py
 //ngrok http 8080
 
 
@@ -1615,8 +1614,8 @@
                         
                         if (audioAnalysis) {
                             // Punktgröße basierend auf durchschnittlicher Lautstärke
-                            // Leise = kleine Punkte (0.5x), Laut = große Punkte (2.0x)
-                            pointSizeMultiplier = 0.5 + (audioAnalysis.volumeScore * 1.5);
+                            // Leise = kleine Punkte (0.5x), Laut = große Punkte (3.0x)
+                            pointSizeMultiplier = 0.5 + (audioAnalysis.volumeScore * 2.5);
                             
                             // NEU: SENSIBLERE Depth-Influence basierend auf Konsistenz
                             // Gleichmäßig = flacher (0.3x), Unterschiedlich = extremer (3.0x)
@@ -3574,9 +3573,8 @@
                                     }
                                 }
                                 
-                                // NEU: NOCH SENSIBLERE verzerrte Depth basierend auf DB-Level
-                                const distortedDepth = originalDepth * (1 + (dbLevel - 0.5) * 4); // -2 bis +2 Verzerrung statt -1 bis +1
-                                const clampedDepth = Math.max(0, Math.min(1, distortedDepth));
+                                // NEU: Depth Map bleibt unverzerrt - nur die Depth-Influence wird durch DB-Variation beeinflusst
+                                const clampedDepth = originalDepth;
                                 
                                 const depthRadius = baseRadius + (clampedDepth * depthInfluence);
                                 
