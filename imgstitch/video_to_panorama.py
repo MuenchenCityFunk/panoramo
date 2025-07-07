@@ -719,33 +719,54 @@ def create_panorama_from_video_smart(video_path: str, stitch_direction: int = 1,
             # Sortiere nach Erstellungszeit (neueste zuerst)
             panorama_files.sort(key=lambda x: os.path.getmtime(os.path.join(output_folder, x)), reverse=True)
             
-            # NEU: Lösche alle Panoramen außer dem besten
+            # NEU: Prüfe welche Panoramen bereits für Depth Maps verwendet wurden
+            existing_depth_maps = [f for f in os.listdir(output_folder) 
+                                 if f.startswith('depth_map_') and f.endswith('.png')]
+            
+            # Erstelle Set der Panorama-Namen, die bereits Depth Maps haben
+            panoramas_with_depth_maps = set()
+            for depth_map_file in existing_depth_maps:
+                # Extrahiere Panorama-Namen aus Depth Map Dateiname
+                # depth_map_stitched_image_20250701_171153.png -> stitched_image_20250701_171153.jpg
+                panorama_name = depth_map_file.replace('depth_map_', '').replace('.png', '') + '.jpg'
+                panoramas_with_depth_maps.add(panorama_name)
+            
+            print(f"🔍 Gefundene Depth Maps: {existing_depth_maps}")
+            print(f"🔍 Panoramen mit Depth Maps: {panoramas_with_depth_maps}")
+            
+            # NEU: Lösche nur Panoramen, die NICHT für Depth Maps verwendet werden
             best_panorama_filename = best_panorama_result['filename'] if best_panorama_result else None
             
             # NEU: Debug-Informationen sammeln
             debug_info = []
             debug_info.append(f"🔍 Debug: best_panorama_result = {best_panorama_result}")
             debug_info.append(f"🔍 Debug: best_panorama_filename = {best_panorama_filename}")
-            debug_info.append(f"🗑️  Lösche {len(panorama_files)} erstellte Panoramen, behalte nur das beste...")
+            debug_info.append(f"🗑️  Prüfe {len(panorama_files)} erstellte Panoramen...")
             
             for panorama_file in panorama_files:
                 panorama_path = os.path.join(output_folder, panorama_file)
-                print(f"🔍 Prüfe: {panorama_file} == {best_panorama_filename}?")
+                print(f"🔍 Prüfe: {panorama_file}")
                 
-                # Behalte nur das beste Panorama
-                if panorama_file == best_panorama_filename:
+                # Behalte Panorama wenn:
+                # 1. Es das beste Panorama ist ODER
+                # 2. Es bereits für eine Depth Map verwendet wird
+                should_keep = (panorama_file == best_panorama_filename or 
+                              panorama_file in panoramas_with_depth_maps)
+                
+                if should_keep:
                     try:
                         img = cv2.imread(panorama_path)
                         if img is not None:
-                            print(f"✅ Behalte: {panorama_file} (Breite={img.shape[1]}, Höhe={img.shape[0]})")
+                            reason = "beste Panorama" if panorama_file == best_panorama_filename else "bereits für Depth Map verwendet"
+                            print(f"✅ Behalte: {panorama_file} (Grund: {reason}, Breite={img.shape[1]}, Höhe={img.shape[0]})")
                             created_panoramas.append(panorama_path)
                     except Exception as e:
                         print(f"⚠️  Fehler beim Laden von {panorama_file}: {e}")
                 else:
-                    # Lösche das andere Panorama
+                    # Lösche das Panorama nur wenn es weder das beste ist noch für eine Depth Map verwendet wird
                     try:
                         os.remove(panorama_path)
-                        print(f"🗑️  Gelöscht: {panorama_file}")
+                        print(f"🗑️  Gelöscht: {panorama_file} (nicht für Depth Map verwendet)")
                     except Exception as e:
                         print(f"⚠️  Fehler beim Löschen von {panorama_file}: {e}")
             
